@@ -78,31 +78,74 @@ class _Text(HTMLParser):
         return t.strip()
 
 
+def _html_to_text(fragment: str) -> str:
+    parser = _Text()
+    parser.feed(fragment)
+    return parser.text()
+
+
 def boe_detail(guid: str, lang: str) -> str:
+    """Render a BOE law page as markdown, article by article.
+
+    The portal keeps the ORIGINAL wording in each article body and puts every
+    amendment (with the amending decree and the new wording) in a pop-up list
+    above it. For an amended article this renders the body under "النص الأصلي"
+    and each amendment under "تعديلات المادة" in the portal's order, so the LAST
+    amendment block is the wording currently in force. Readers must use that
+    block, not the body, for any article marked amended.
+    """
     p = PORTALS["boe"]
     url = p["detail"].format(id=guid, lang=p["langs"][lang])
     raw = curl(url)
-    # Keep only the law body: from the first article container to the end of the article list.
-    body = raw
-    m = re.search(r'<div[^>]*class="[^"]*(HTMLContainer|article_item)[^"]*"', raw)
-    if m:
-        body = raw[m.start():]
-    # Drop popups holding previous versions of amended articles; they duplicate the text.
-    body = re.sub(r'<div class="article_item_popup".*?</div>\s*</div>', "", body, flags=re.S)
-    parser = _Text()
-    parser.feed(body)
-    text = parser.text()
-    # Metadata lines from the head of the page (issue and publication dates) if present.
     meta = []
-    for label in ("تاريخ الإصدار", "تاريخ النشر", "رقم الصك", "Issue Date", "Publication Date"):
-        mm = re.search(label + r".{0,120}", raw, flags=re.S)
+    for label in ("تاريخ الإصدار", "تاريخ النشر", "الحالة", "Issue Date", "Publication Date"):
+        mm = re.search(label + r".{0,160}", raw, flags=re.S)
         if mm:
             clean = re.sub(r"<[^>]+>", " ", mm.group(0))
             meta.append(re.sub(r"\s+", " ", html.unescape(clean)).strip())
-    head = [f"<!-- source: {url} -->", f"<!-- portal: {p['name']} -->"]
-    changed = raw.count("changed-article")
-    head.append(f"<!-- articles marked as amended on the portal: {changed} -->")
-    return "\n".join(head + [""] + meta + ["", text])
+    tools = re.search(r"أدوات إصدار النظام(.*?)</div>\s*</div>", raw, flags=re.S)
+    if tools:
+        meta.append("أدوات الإصدار: " + re.sub(r"\s+", " ", html.unescape(re.sub(r"<[^>]+>", " | ", tools.group(1)))).strip(" |"))
+    # Preamble (law description block) before the first article container.
+    first = re.search(r'<div[^>]*class="[^"]*article_item[^"]*"', raw)
+    head_text = _html_to_text(raw[:first.start()]) if first else ""
+    head_text = "\n".join(l for l in head_text.splitlines() if l.strip())
+    # Split into article blocks.
+    blocks = re.split(r'(?=<div[^>]*class="article_item[^"]*")', raw[first.start():] if first else raw)
+    out = []
+    changed = 0
+    for b in blocks:
+        m = re.match(r'<div[^>]*class="article_item([^"]*)"', b)
+        if not m:
+            continue
+        is_changed = "changed-article" in m.group(1)
+        title = re.search(r"<h3[^>]*>(.*?)</h3>", b, flags=re.S)
+        title_txt = re.sub(r"\s+", " ", html.unescape(re.sub(r"<[^>]+>", "", title.group(1)))).strip() if title else "مادة"
+        popups = re.findall(r'<div class="article_item_popup">(.*?)</div>\s*<a href', b, flags=re.S)
+        pop_txt = [_html_to_text(re.sub(r"<h3.*?</h3>", "", x, flags=re.S)) for x in popups]
+        body_html = re.sub(r'<div[^>]*class="[^"]*popup-list"[^>]*>.*?</div>\s*</div>\s*</div>', "", b, flags=re.S) if popups else b
+        body_html = re.sub(r"<h3.*?</h3>", "", body_html, count=1, flags=re.S)
+        body_html = re.sub(r'<div class="article_btns">.*?</div>', "", body_html, flags=re.S)
+        body_txt = _html_to_text(body_html)
+        body_txt = re.sub(r"^\s*(تعديلات المادة)\s*", "", body_txt).strip()
+        if is_changed:
+            changed += 1
+            out.append(f"### {title_txt} [معدلة]")
+            out.append("**النص الأصلي (قبل التعديل):**\n" + body_txt)
+            for i, t in enumerate(pop_txt, 1):
+                tag = " (النص النافذ)" if i == len(pop_txt) else ""
+                out.append(f"**تعديلات المادة {i}/{len(pop_txt)}{tag}:**\n" + t.strip())
+        else:
+            out.append(f"### {title_txt}")
+            out.append(body_txt)
+        out.append("")
+    status = next((m for m in meta if m.startswith("الحالة")), "الحالة: (not found)")
+    if "لاغي" in status:
+        sys.stderr.write(f"WARNING: portal status is repealed (لاغي) for {guid}; find the current law with --search\n")
+    head = [f"<!-- source: {url} -->", f"<!-- portal: {p['name']} -->", f"<!-- status: {status} -->",
+            f"<!-- articles marked as amended on the portal: {changed} -->",
+            "<!-- For an article marked [معدلة], the body is the ORIGINAL text; the last 'تعديلات المادة' block is the wording in force. -->"]
+    return "\n".join(head + [""] + meta + ["", head_text, ""] + out)
 
 
 def boe_attachments(guid: str, lang: str) -> list:
