@@ -18,17 +18,40 @@ user-invocable: false
 
 ## Purpose
 
-SaaS agreements have a distinct risk profile from one-time vendor contracts. The dollars compound over renewals, the data accumulates, and the switching cost grows every month. This skill reviews with that in mind.
+SaaS agreements have a distinct risk profile from one-time vendor contracts. The fees compound over renewals, the data accumulates, and the switching cost grows every month. This skill reviews with that in mind.
 
 It runs the standard playbook check from `~/.claude/plugins/config/claude-for-legal/commercial-legal/CLAUDE.md` and adds a SaaS-specific overlay on the terms that bite hardest in subscription deals.
 
-## Jurisdiction assumption
+### Step 0: Resolve the applicable jurisdiction
 
-SaaS terms (auto-renewal notice requirements, price-escalation caps, data-portability mandates, subprocessor rules) are jurisdiction-sensitive — California, New York, and EU rules diverge materially, and some states have auto-renewal statutes that override private contract terms. This review applies the team's positions from `~/.claude/plugins/config/claude-for-legal/commercial-legal/CLAUDE.md`, which assume the governing law recorded there. If the agreement picks a different governing law, or the deal spans jurisdictions with statutory overrides (e.g., EU-based users, California consumers), flag it — the analysis may not transfer as written.
+1. **Read the practice profile's `## Jurisdiction` section.** It gives the primary jurisdiction code, the footprint list (other codes the practice operates in), the output-language preference, and whether local counsel is available for escalation. Codes are ISO 3166-1 alpha-3 lowercase (`ksa`, `gbr`, `fra`, `che`, `usa`). If the section is missing or still a placeholder, stop: "The practice profile has no jurisdiction. Run the cold-start interview; nothing in this skill can run against the wrong jurisdiction."
+2. **Determine the matter's jurisdiction(s).** Start from the primary code. Then read the matter facts: governing-law clause, seat of arbitration, place of employment, jurisdiction of incorporation, place of performance. If the facts point to a code not in the profile, add it for this matter and say so in the reviewer note. A matter may have more than one code (a contract governed by English law with a Saudi counterparty and Saudi performance is `gbr` + `ksa`).
+3. **Load the jurisdiction folder for each code.** The folder is `references/jurisdictions/<code>/` in this plugin (the same tree ships at the repo root and in every runtime adapter). Read `MANIFEST.md` first.
+   - If `populated` is not `yes`: **stop for that code.** Say: "Jurisdiction `<code>` (<name>) is registered but not populated: no reference files exist for it. I will not apply another jurisdiction's rules or model knowledge in its place. Options: (1) populate `references/jurisdictions/<code>/` (see README, 'How to add a jurisdiction'), (2) route this matter to local counsel, (3) tell me to proceed with the analysis limited to the populated jurisdictions in this matter, with every finding for `<code>` marked `[not populated — no rule applied]`." Wait for the answer. Never fall back silently.
+   - If the code is `usa`: there is no folder. Follow this skill's US path (the upstream doctrine and the upstream research connectors, CourtListener or Westlaw, with the upstream "no silent supplement" rule). Label findings `[usa]`.
+   - If `populated` is `yes`: read `INDEX.md`, then the instrument files this skill names in its "Jurisdiction files" list. A row tagged `[settled — last confirmed YYYY-MM-DD]` may be applied and cited by article. A row tagged `[model knowledge — verify]` may be applied only with that tag carried onto the finding. If a rule this skill needs is not in the files at all, do not supply it from memory: say what is missing, tag the gap `[no rule in <code> files — verify]`, and continue only with the rules that exist.
+4. **Multi-jurisdiction matters.** Run the relevant files side by side. Label every finding with its code in square brackets, `[ksa]`, `[gbr]`, `[usa]`, and never merge two jurisdictions' rules into one sentence. Where the codes conflict (a clause valid under one law and reducible under another), state both and flag `[review]` for the lawyer to decide which governs.
+5. **Research step (when a rule must be quoted or its currency checked).** Use the portal named in `MANIFEST.md` → `research_tool`. For `ksa`: `python3 scripts/fetch-law.py --portal boe --id <guid> --lang ar` (GUIDs in `SOURCES.md`), or `curl -sS https://laws.boe.gov.sa/BoeLaws/Laws/LawDetails/<guid>/1`; the built-in web-fetch tool rejects the portal's TLS chain. Quote the article, tag `[BOE — Arabic]` (or `[BOE — official English]` when quoting the translation), and check the status line and the "تعديلات المادة" block for amendments. If the fetch fails or the article is not found, apply the "no silent supplement" rule: report the failure and stop, or continue with the rule tagged `[model knowledge — verify]` only if the user says so.
+6. **Calendar and language.** Take the weekend, public-holiday, calendar (Hijri or Gregorian) and currency rules from `MANIFEST.md`. Compute every date and roll-back against that calendar, never against a Saturday/Sunday weekend or US federal holidays. Produce the deliverable in English; when the profile's output-language preference is bilingual, or the manifest's authoritative language is not English and counterparty-facing text is produced, add the authoritative-language rendering of the bottom line, the findings table, and any counterparty-facing text, using the spellings in the manifest's `output_language_rule`.
+7. **Header and disclaimer.** Prepend the manifest's `disclaimer` line under the work-product header for every deliverable that applies a non-`usa` jurisdiction. For `ksa`: "Arabic text is authoritative; English translations are for convenience; a licensed Saudi lawyer must review before reliance." with its Arabic rendering from the manifest.
+8. **Record in the reviewer note.** `Jurisdiction: <codes applied>; files: <list>; portal fetched: yes/no; unpopulated codes: <list or none>.`
 
-> **No silent supplement.** If a research query to the configured legal research tool (Westlaw, or firm platform) returns few or no results for a statutory override that might bear on the deal (auto-renewal statute, data-portability mandate, consumer-protection rule), report what was found and stop. Do NOT fill the gap from web search or model knowledge without asking. Say: "The search returned [N] results from [tool]. Coverage appears thin for [jurisdiction / rule]. Options: (1) broaden the search query, (2) try a different research tool, (3) search the web — results will be tagged `[web search — verify]` and should be checked against a primary source before relying, or (4) flag as unverified and stop. Which would you like?" A lawyer decides whether to accept lower-confidence sources.
+**Jurisdiction files this skill loads** (for each populated non-`usa` code resolved in Step 0; article numbers are the `ksa` rows that exist today):
+
+- Everything in the vendor-agreement-review list, applied at the same steps (this skill runs the vendor-agreement-review checks first).
+- `civil-transactions-law.md` — SaaS overlay: auto-renewal absence row and Art. 440 (only leases are regulated), Arts. 37 and 94 (deemed acceptance, amendment only by agreement), Art. 96 (adhesion review of unilateral price-change and renewal terms), Arts. 178-179 (service credits are agreed compensation), Art. 164 (sole-remedy clauses, `[model knowledge — verify]`), Art. 114 (suspension for non-payment), Art. 111 (prospective termination, prepaid fees).
+- `personal-data-protection-law.md` — data exit, subprocessors, AI/ML data rights: Art. 8 and Regulation Art. 17(1) item (g) and Regulation Art. 17(5) (sub-processor identification and prior acceptance), Art. 18 (deletion), Art. 29 and the Transfer Regulation row (`[model knowledge — verify]`), Art. 22 and Regulation Art. 25 (impact-assessment information for AI, analytics and monitoring tools), Art. 1 (anonymised data leaves the definition only if no longer identifiable), Localisation row (`[model knowledge — verify]`).
+- `commercial-agencies-law.md` — only when a reseller or channel partner resells the subscription: Added Art. 1 row and the open question on services resale (stop and refer).
+
+## Jurisdiction
+
+SaaS terms (auto-renewal notice requirements, price-escalation caps, data-portability mandates, subprocessor rules) are jurisdiction-sensitive. Step 0 above resolves the code(s); the enforceability rules come from the jurisdiction files, applied exactly as in vendor-agreement-review Step 3 ("Jurisdiction enforceability check"), using the same files, plus the SaaS-specific rows named in the "Jurisdiction files this skill loads" block. Whether a statute overrides a private auto-renewal or price term is answered by the file's row, never assumed: for a populated non-`usa` code the row is quoted (or its absence reported); for `usa` the upstream state-statute divergences in vendor-agreement-review's `usa` branch apply. If the agreement picks a governing law, forum or place of performance that points to a code Step 0 did not resolve, add it, run Step 0 item 3 for it, and label the findings by code.
+
+**Research step (quoting an article or checking its currency).** For a populated non-`usa` code, fetch the instrument from the portal named in the manifest: `python3 scripts/fetch-law.py --portal boe --id <guid> --lang ar` (GUIDs in `references/jurisdictions/<code>/SOURCES.md`; the built-in web-fetch tool rejects the portal's TLS chain, use the script or `curl`), quote the article, tag `[BOE — Arabic]` or `[BOE — official English]`, and check the status line and the amendment block. For `usa`, use the upstream research connectors (Westlaw, CourtListener). Record the probe result in the reviewer note Sources line.
+
+> **No silent supplement.** If the portal fetch fails, the article is not found, or a research query to the configured legal research tool returns few or no results for a statutory override that might bear on the deal (auto-renewal statute, data-portability mandate, consumer-protection rule), report what was found and stop. Do NOT fill the gap from web search or model knowledge without asking. Say: "The search returned [N] results from [tool / portal]. Coverage appears thin for [jurisdiction / rule]. Options: (1) broaden the search query, (2) try a different research tool, (3) search the web — results will be tagged `[web search — verify]` and should be checked against a primary source before relying, or (4) flag as unverified and stop. Which would you like?" A lawyer decides whether to accept lower-confidence sources. A rule the jurisdiction file does not carry at all is reported as `[no rule in <code> files — verify]` and is never supplied from memory.
 >
-> **Source attribution.** Where the review cites a statute, regulation, or case (e.g., a state auto-renewal law overriding contract terms), tag the citation: `[Westlaw]`, `[statute / regulator site]`, or the MCP tool name for citations retrieved from a legal research connector; `[web search — verify]` for web-search citations; `[model knowledge — verify]` for citations recalled from training data; `[user provided]` for citations from the counterparty draft or house files. Citations tagged `verify` carry higher fabrication risk and should be checked first. Never strip or collapse the tags.
+> **Source attribution.** Where the review cites a statute, regulation, or case (e.g., a state auto-renewal law overriding contract terms on the `usa` branch), tag the citation: `[BOE — Arabic]` / `[BOE — official English]` / `[authority — <name>]` for text fetched from the portal or issuing authority named in the manifest; `[Westlaw]`, `[statute / regulator site]`, or the MCP tool name for citations retrieved from a legal research connector; `[settled — last confirmed YYYY-MM-DD]` carried verbatim from a jurisdiction-file row; `[web search — verify]` for web-search citations; `[model knowledge — verify]` for citations recalled from training data; `[user provided]` for citations from the counterparty draft or house files. Citations tagged `verify` carry higher fabrication risk and should be checked first. Never strip or collapse the tags.
 
 ## Load the playbook
 
@@ -61,6 +84,11 @@ Check each element and compare against the team's `SaaS positions` in `~/.claude
 
 **Extract and record** the exact renewal date and the notice window regardless of whether any item is flagged. This feeds the renewal-tracker skill.
 
+**Statutory position on auto-renewal — branch on the code from Step 0.**
+
+- *Populated non-`usa` code:* read the auto-renewal row of `civil-transactions-law.md`. For `ksa` the file says auto-renewal of B2B service and subscription contracts is **not statutorily regulated** (the Law regulates automatic renewal only for leases, Art. 440; the absence row and the open question record that no notice period, cap or cancellation rule exists for B2B subscriptions in this Law). State that exactly: the renewal mechanics are a drafting point measured against the playbook, not a statutory-override point, and enforceability of the renewal and any price change rests on Art. 94 (amendment only by agreement) and Art. 37 (deemed acceptance by silence), with Art. 96 adhesion review as the customer's protection against abusive renewal or unilateral price-change terms (`[model knowledge — verify]` on B2B application). Do not imply a statutory notice window. If the counterparty is a consumer or the agreement is B2C, the file points to the E-Commerce Law and consumer rules, which are outside this skill: say so and route.
+- *`usa`:* apply the upstream state auto-renewal divergences in vendor-agreement-review's "When the applicable code is `usa`" branch, tagged `[jurisdiction — verify]`.
+
 ### 2. Price escalation
 
 Check each element against `~/.claude/plugins/config/claude-for-legal/commercial-legal/CLAUDE.md`:
@@ -80,6 +108,8 @@ When (not if) we leave this vendor, can we get our data out? Check each element 
 - **Deletion certification** (certified on request, none, vendor retains derivatives)
 
 Vendor retention of "anonymized" or "aggregated" derivatives is a material position — confirm the team's stance in `~/.claude/plugins/config/claude-for-legal/commercial-legal/CLAUDE.md` and flag either way.
+
+For a populated non-`usa` code, the deletion and retention items are measured against `personal-data-protection-law.md` (for `ksa`: Art. 18 — destroy without delay once the purpose ends, retention only for a legal-retention period or a pending case, so open-ended "backup" retention is inconsistent with the row; Art. 1 — data stay "personal data" until no longer identifiable, so an undefined "anonymised derivatives" right is a finding; Art. 31 / Regulation Art. 33 — the vendor must supply what the controller needs for its records). Cite the row on each finding.
 
 ### 4. Uptime and SLA
 
@@ -103,6 +133,8 @@ Check each element against `~/.claude/plugins/config/claude-for-legal/commercial
 - **Change notification** (advance notice period, or none)
 - **Objection rights** (blocking, notice-and-terminate, notice-only, none)
 
+For a populated non-`usa` code, apply `personal-data-protection-law.md` before the playbook comparison (for `ksa`: Art. 8 and Regulation Art. 17(1)(g) — sub-processors must be identified in the agreement; Regulation Art. 17(5) — prior acceptance by the controller with an objection window agreed between the parties, so a silent auto-approval is a finding and a list-plus-notice-period mechanism fits, `[model knowledge — verify]` on the latter; Art. 29 and the Transfer Regulation row — processing locations and the transfer mechanism must be stated, and the mechanism is never certified as compliant from this file; Art. 20 / Regulation Art. 24 — breach notice content and a processor deadline short enough for the controller's 72-hour filing). A data-localisation demand is answered by the sector regulator, not the PDPL (Localisation row, `[model knowledge — verify]`): ask which sector rules apply before requiring in-country hosting. Where the row is silent, tag `[no rule in <code> files — verify]`.
+
 ### 6. Service changes and deprecation
 
 SaaS vendors change their product. Usually fine. Sometimes they deprecate the thing you bought.
@@ -121,11 +153,11 @@ Check each element against `~/.claude/plugins/config/claude-for-legal/commercial
 
 1. **Explicit grant.** Does the contract explicitly grant the vendor rights to use Customer Data / Customer Content / Usage Data for AI training, model improvement, or ML development? Purchasing-side: this is usually a NO — customer data training the vendor's models means the customer is subsidizing the vendor's product and possibly leaking competitive information. Sales-side: this is revenue if you get it, reputation risk if you abuse it.
 2. **Implicit grant via policy.** Does the contract incorporate the vendor's privacy policy or terms of service by reference? Can the vendor add training rights via a unilateral policy update? Check: "The parties agree to the Provider's Privacy Policy as updated from time to time" is a training-rights grant waiting to happen. Also watch for "service improvement" or "analytics" catch-alls and "usage data" definitions that carve logs/telemetry out of the Customer Data definition so data-use restrictions don't apply.
-3. **Anonymization standard.** If the vendor claims it only trains on "anonymized" or "aggregated" data, what's the standard? "Anonymized" without a definition is weak. Does it meet GDPR Recital 26 / HIPAA Safe Harbor / a named standard? Is it reversible?
+3. **Anonymization standard.** If the vendor claims it only trains on "anonymized" or "aggregated" data, what's the standard? "Anonymized" without a definition is weak. Does it meet a named standard, and is it reversible? The named standard comes from the jurisdiction: for a populated non-`usa` code, the definition in `personal-data-protection-law.md` (for `ksa`: Art. 1 — data remain personal while the individual is identifiable directly or indirectly; Art. 18 — retention after the purpose ends only if everything identifying the data subject is removed per the Regulations; the anonymisation regulation itself is not in the file, so tag `[no rule in <code> files — verify]` for the technical standard). For `usa`, or where the profile's footprint includes the EU, the upstream examples (GDPR Recital 26, HIPAA Safe Harbor) apply on that branch.
 4. **Competitive contamination.** Does the vendor serve your competitors? If so, training on your data could leak competitive intelligence into outputs your competitors see. Is there a competitive isolation commitment?
 5. **Opt-out scope and durability.** If there's an opt-out, does it cover all AI uses or only some? Does it survive renewals and TOS updates? Is it per-user or per-org? Many vendors default to training and offer an opt-out buried in an admin console — check whether the contract makes the default explicit.
 6. **Output ownership.** If the SaaS product is itself AI-generated (drafting, summarization, analysis), who owns the outputs? Can the vendor use your outputs as training examples? Check third-party AI subprocessors too — the vendor may send customer data to a third-party LLM (OpenAI, Anthropic, Google) and the subprocessor list / data flow is where that shows up.
-7. **Downstream regulatory chain.** Does the vendor's use of your data for AI create regulatory exposure for YOU? EU AI Act deployer obligations, FTC §5 undisclosed data-sharing exposure (see *FTC v. Humor Rainbow/OkCupid*), state AI laws.
+7. **Downstream regulatory chain.** Does the vendor's use of your data for AI create regulatory exposure for YOU? Branch on the code from Step 0. *Populated non-`usa` code:* the regulator chain is the one the jurisdiction files name — for `ksa`, `personal-data-protection-law.md` (SDAIA as Competent Authority; Art. 22 and Regulation Art. 25 impact assessment for AI, analytics and automated decision-making, with the vendor obliged to supply the information and receive a copy; Art. 36 fine ceiling; Art. 29 for data sent to a third-party model provider abroad). An AI-specific statute is not in the files: tag `[no rule in <code> files — verify]` rather than importing another jurisdiction's AI law. *`usa` (or an EU footprint on the profile):* EU AI Act deployer obligations, FTC §5 undisclosed data-sharing exposure (see *FTC v. Humor Rainbow/OkCupid* `[model knowledge — verify]`), state AI laws.
 
 Match each to a playbook position. The practice profile's `## AI/ML training rights` section should have positions for each. If the agreement is silent on all seven, that's still a finding: "The agreement is silent on AI/ML training rights — request an explicit prohibition or a defined carve-out tied to each of the seven dimensions above."
 
@@ -137,21 +169,21 @@ Match each to a playbook position. The practice profile's `## AI/ML training rig
 
 2. **The cap base — quote it verbatim.** "12-month cap" could mean: (a) fees paid in the 12 months preceding the claim, (b) fees payable in the current 12-month period, (c) fees over the last 12 months of usage, (d) fees under the current order form, (e) total fees ever paid. These can differ by an order of magnitude. Quote the exact language. If ambiguous, flag it: "Cap base is ambiguous — `[the quoted language]` — could mean [X] or [Y]. Confirm before signing."
 
-3. **Cap-carveout interaction.** A $100K cap with uncapped indemnity for data breach, IP, and confidentiality is functionally uncapped for the claims that actually arise in SaaS disputes. Enumerate what sits ABOVE the cap (the carveouts), what sits BELOW (what's actually capped), and assess whether the capped surface is meaningful: "The cap covers [general contract breach]. Data breach, IP indemnity, and confidentiality are carved out and uncapped. For this vendor's risk profile, the capped surface is [meaningful / nominal]."
+3. **Cap-carveout interaction.** A [currency] 100K cap with uncapped indemnity for data breach, IP, and confidentiality is functionally uncapped for the claims that actually arise in SaaS disputes. Enumerate what sits ABOVE the cap (the carveouts), what sits BELOW (what's actually capped), and assess whether the capped surface is meaningful: "The cap covers [general contract breach]. Data breach, IP indemnity, and confidentiality are carved out and uncapped. For this vendor's risk profile, the capped surface is [meaningful / nominal]."
 
 4. **Your playbook position per dimension.** The practice profile should have positions for: direct cap (multiple of fees), indirect damages (excluded / capped / uncapped), carveout list (what's acceptable above the cap), and cap base (which definition you'll accept). If the playbook has one "standard position" field, note: "Your playbook has a single cap position — consider splitting into direct/indirect/carveouts/base for more precise review."
 
-## Jurisdiction delta check
+## Jurisdiction enforceability check
 
-**The playbook applies one governing-law preference globally. Enforceability varies materially.** Check the SaaS contract's actual governing law against the top divergences before accepting playbook positions at face value:
+**The playbook applies one governing-law preference globally. Enforceability varies materially.** Apply the enforceability step exactly as in vendor-agreement-review Step 3 ("Jurisdiction enforceability check"), using the same files and the same two branches — the jurisdiction-file branch for a populated non-`usa` code (items 1-19 there, including the penalty-clause finding template) and the "When the applicable code is `usa`" branch with the upstream divergences. That step is the single source for the enforceability rules; this skill does not carry its own copy. The SaaS-specific applications are:
 
-- **Non-solicits/non-competes:** Unenforceable in CA (Bus. & Prof. Code §16600). Restricted in many EU jurisdictions. Enforceable with limitations elsewhere. `[jurisdiction — verify]`
-- **Auto-renewal:** CA GBL §17600-17606, NY GBL §527-a, IL 815 ILCS 601 have specific consumer/B2B notice requirements. Other states vary. `[jurisdiction — verify]`
-- **Liability exclusions:** EU and UK unfair contract terms rules (UCTA 1977, Consumer Rights Act 2015) constrain consumer exclusions. Some US states limit exclusion of gross negligence or willful misconduct. `[jurisdiction — verify]`
-- **Indemnification:** Some states void indemnification for the indemnitee's own negligence. `[jurisdiction — verify]`
-- **Confidentiality term:** Some jurisdictions limit "perpetual" confidentiality to a reasonable period. `[jurisdiction — verify]`
+- **Service credits and SLA remedies** are agreed compensation: `civil-transactions-law.md` Arts. 178-179 (reviewable, no-harm defence, cap effect), and a "sole and exclusive remedy" clause is measured against Art. 164 (`[model knowledge — verify]` on sole-remedy clauses). Use the penalty-clause finding template.
+- **Unilateral price changes and renewal terms**: Arts. 94, 96, 37 as stated in the auto-renewal section above.
+- **Suspension for non-payment**: Art. 114 (a statutory suspension right exists without a clause).
+- **Prepaid fees on termination**: Art. 111 (termination is prospective; refund of unused prepaid fees is a drafting point).
+- **Data terms**: `personal-data-protection-law.md` rows as listed above; never answered from the civil code.
 
-When the playbook position conflicts with the contract's governing-law enforceability, flag: "Your playbook prefers [X], but this contract is governed by [Y] law where [X] is [unenforceable / restricted / subject to statutory override]. `[jurisdiction — verify]`"
+When the playbook position conflicts with the contract's governing-law enforceability under either branch, flag: "Your playbook prefers [X], but this contract is governed by [Y] law where [X] is [unenforceable / restricted / reducible by the court / subject to statutory override] — [file and article, or `[jurisdiction — verify]` on the `usa` branch]."
 
 ## Redline granularity
 
@@ -168,7 +200,7 @@ When in doubt, smaller. A client who receives a surgical redline trusts that you
 
 ## Output
 
-Use the vendor-agreement-review memo structure, with a SaaS-specific section added after the standard playbook checks. The vendor-agreement-review memo already carries the privilege header.
+Use the vendor-agreement-review memo structure, with a SaaS-specific section added after the standard playbook checks. The vendor-agreement-review memo already carries the privilege header; keep its jurisdiction disclaimer line directly under the header for every code other than `usa` (from the profile `## Jurisdiction`), and apply the bilingual house-style rule from the profile `## Outputs`: when the output language is bilingual, or the memo carries counterparty-facing text in a jurisdiction whose authoritative language is not English, add the authoritative-language rendering of the bottom line, the findings table (including the SaaS-specific findings), and every counterparty-facing passage, using the spellings in the manifest's `output_language_rule`. Contract values and caps are written in `[currency]` from the profile. The reviewer note carries the Step 0 record line.
 
 **Dual severity.** Every SaaS-specific finding carries both axes (see CLAUDE.md `## Dual severity`):
 - **Legal risk:** 🔴 Critical | 🟠 High | 🟡 Medium | 🟢 Low
@@ -221,7 +253,7 @@ signed_date:          [ISO date]
 initial_term_end:     [ISO date]
 renewal_mechanism:    [e.g., "auto-renew annual"]
 notice_period_days:   [integer]
-cancel_by_effective:            [ISO date — initial_term_end minus notice_period_days]
+cancel_by_effective:            [ISO date — initial_term_end minus notice_period_days, rolled back to the last business day under the calendar in the manifest (weekend and public holidays from the profile `## Jurisdiction`), never a Saturday/Sunday or US-holiday assumption; tag "[computed — MANIFEST.md calendar, <code>; inputs: term end <date>, notice <N> days, weekend <days>, holidays checked <list>]"]
 price_on_renewal:     [mechanism as written]
 annual_value:         [integer, if stated]
 business_owner:       [email, if known]
@@ -237,7 +269,7 @@ If any field is not determinable from the contract or context, leave it out and 
 
 SaaS vendors, especially large ones, negotiate their paper about as willingly as airlines negotiate ticket terms. Pick battles *per the team's playbook* — the `SaaS positions` section in `~/.claude/plugins/config/claude-for-legal/commercial-legal/CLAUDE.md` should distinguish between terms the team will always push on, terms it fights over only for material deals, and terms it lets slide. If the playbook doesn't draw those lines, ask.
 
-Calibrate based on contract value and switching cost. A $5K/year tool with easy alternatives gets a lighter touch than a $500K/year platform we'll build on top of.
+Calibrate based on contract value and switching cost. A [currency] 5K/year tool with easy alternatives gets a lighter touch than a [currency] 500K/year platform we'll build on top of.
 
 ## Close with the next-steps decision tree
 

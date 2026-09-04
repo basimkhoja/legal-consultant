@@ -1,7 +1,7 @@
 {
   "name": "employment-legal",
-  "version": "1.0.2",
-  "description": "Reviews hires and terminations for jurisdiction-specific risk flags, classifies workers against the controlling state test, tracks leave deadlines before they're missed, runs internal investigations, and drafts policies with state supplements where the law differs.",
+  "version": "2.0.0",
+  "description": "Reviews hires and terminations against the applicable jurisdiction's labor law with computed end-of-service and compensation figures, classifies workers under the controlling test, tracks statutory leave deadlines before they're missed, runs internal investigations, and drafts policies with jurisdiction supplements where the law differs.",
   "author": {
     "name": "Anthropic"
   }

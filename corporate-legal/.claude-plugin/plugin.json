@@ -1,7 +1,7 @@
 {
   "name": "corporate-legal",
-  "version": "1.0.2",
-  "description": "Runs M&A diligence at scale with cited tabular review, builds disclosure schedules and closing checklists, drafts board consents and minutes in house format, and tracks entity compliance deadlines across jurisdictions.",
+  "version": "2.0.0",
+  "description": "Runs M&A diligence at scale with cited tabular review and jurisdiction-specific category overlays, builds disclosure schedules and closing checklists with the deal jurisdictions' regulatory map, drafts board consents and minutes in house format under the applicable companies law, and tracks entity compliance deadlines by jurisdiction and entity type.",
   "author": {
     "name": "Anthropic"
   }

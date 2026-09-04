@@ -15,6 +15,25 @@ Surfaces what's renewing and when you have to cancel by.
 
 ## Instructions
 
+### Step 0: Resolve the applicable jurisdiction
+
+1. **Read the practice profile's `## Jurisdiction` section.** It gives the primary jurisdiction code, the footprint list (other codes the practice operates in), the output-language preference, and whether local counsel is available for escalation. Codes are ISO 3166-1 alpha-3 lowercase (`ksa`, `gbr`, `fra`, `che`, `usa`). If the section is missing or still a placeholder, stop: "The practice profile has no jurisdiction. Run the cold-start interview; nothing in this skill can run against the wrong jurisdiction."
+2. **Determine the matter's jurisdiction(s).** Start from the primary code. Then read the matter facts: governing-law clause, seat of arbitration, place of employment, jurisdiction of incorporation, place of performance. If the facts point to a code not in the profile, add it for this matter and say so in the reviewer note. A matter may have more than one code (a contract governed by English law with a Saudi counterparty and Saudi performance is `gbr` + `ksa`).
+3. **Load the jurisdiction folder for each code.** The folder is `references/jurisdictions/<code>/` in this plugin (the same tree ships at the repo root and in every runtime adapter). Read `MANIFEST.md` first.
+   - If `populated` is not `yes`: **stop for that code.** Say: "Jurisdiction `<code>` (<name>) is registered but not populated: no reference files exist for it. I will not apply another jurisdiction's rules or model knowledge in its place. Options: (1) populate `references/jurisdictions/<code>/` (see README, 'How to add a jurisdiction'), (2) route this matter to local counsel, (3) tell me to proceed with the analysis limited to the populated jurisdictions in this matter, with every finding for `<code>` marked `[not populated — no rule applied]`." Wait for the answer. Never fall back silently.
+   - If the code is `usa`: there is no folder. Follow this skill's US path (the upstream doctrine and the upstream research connectors, CourtListener or Westlaw, with the upstream "no silent supplement" rule). Label findings `[usa]`.
+   - If `populated` is `yes`: read `INDEX.md`, then the instrument files this skill names in its "Jurisdiction files" list. A row tagged `[settled — last confirmed YYYY-MM-DD]` may be applied and cited by article. A row tagged `[model knowledge — verify]` may be applied only with that tag carried onto the finding. If a rule this skill needs is not in the files at all, do not supply it from memory: say what is missing, tag the gap `[no rule in <code> files — verify]`, and continue only with the rules that exist.
+4. **Multi-jurisdiction matters.** Run the relevant files side by side. Label every finding with its code in square brackets, `[ksa]`, `[gbr]`, `[usa]`, and never merge two jurisdictions' rules into one sentence. Where the codes conflict (a clause valid under one law and reducible under another), state both and flag `[review]` for the lawyer to decide which governs.
+5. **Research step (when a rule must be quoted or its currency checked).** Use the portal named in `MANIFEST.md` → `research_tool`. For `ksa`: `python3 scripts/fetch-law.py --portal boe --id <guid> --lang ar` (GUIDs in `SOURCES.md`), or `curl -sS https://laws.boe.gov.sa/BoeLaws/Laws/LawDetails/<guid>/1`; the built-in web-fetch tool rejects the portal's TLS chain. Quote the article, tag `[BOE — Arabic]` (or `[BOE — official English]` when quoting the translation), and check the status line and the "تعديلات المادة" block for amendments. If the fetch fails or the article is not found, apply the "no silent supplement" rule: report the failure and stop, or continue with the rule tagged `[model knowledge — verify]` only if the user says so.
+6. **Calendar and language.** Take the weekend, public-holiday, calendar (Hijri or Gregorian) and currency rules from `MANIFEST.md`. Compute every date and roll-back against that calendar, never against a Saturday/Sunday weekend or US federal holidays. Produce the deliverable in English; when the profile's output-language preference is bilingual, or the manifest's authoritative language is not English and counterparty-facing text is produced, add the authoritative-language rendering of the bottom line, the findings table, and any counterparty-facing text, using the spellings in the manifest's `output_language_rule`.
+7. **Header and disclaimer.** Prepend the manifest's `disclaimer` line under the work-product header for every deliverable that applies a non-`usa` jurisdiction. For `ksa`: "Arabic text is authoritative; English translations are for convenience; a licensed Saudi lawyer must review before reliance." with its Arabic rendering from the manifest.
+8. **Record in the reviewer note.** `Jurisdiction: <codes applied>; files: <list>; portal fetched: yes/no; unpopulated codes: <list or none>.`
+
+**Jurisdiction files this skill loads** (for each populated non-`usa` code resolved in Step 0):
+
+- `MANIFEST.md` — the `calendar` row (weekend days, public holidays, Hijri or Gregorian) and the `currency` row. For `ksa` the row reads: Friday-Saturday weekend; Eid al-Fitr, Eid al-Adha, National Day (23 September), Founding Day (22 February); official dates Hijri (Umm al-Qura).
+- `civil-transactions-law.md` — Art. 2 (statutory periods are Hijri; contractual periods are whatever the contract says), Art. 440 (auto-renewal of leases; holding over renews), the auto-renewal absence row (no statutory notice window for B2B service or subscription renewals), Art. 37 (deemed acceptance by silence), Arts. 175-177 (notice by the agreed means).
+
 1. **Read `~/.claude/plugins/config/claude-for-legal/commercial-legal/renewal-register.yaml`** (the config directory — survives plugin updates).
 
 2. **Default mode:** Mode 2 — what's coming up in the next 90 days, grouped by urgency using half-open intervals so each deadline lands in exactly one band: 🔴 0–13 days, 🟠 14–44 days, 🟡 45–89 days. Days 14, 45, and 90 are boundaries — each belongs to exactly one band, not two.
@@ -95,9 +114,13 @@ register catches it.
 When you compute (or ingest) a cancel-by date:
 
 1. **Compute the calendar date.** `cancel_by_calendar = initial_term_end − notice_period_days` (or whatever the clause specifies). This is the raw arithmetic.
-2. **Business-day roll-back keyed to governing law.** The contract's governing law determines which holidays count. US: federal holidays + the state's holidays if governing law is a state. England & Wales: bank holidays. Germany: Feiertage (vary by Bundesland — ask which). Canada: federal + provincial. Singapore: public holidays. If Saturday, roll back to Friday. If Sunday, roll back to Friday. If a holiday in the governing-law jurisdiction, roll back to the prior business day. Roll BACK, never forward — forward means notice arrives after the window closes. For non-US governing law, if you can't determine the holiday calendar, flag it: "Governing law is [X] — business-day roll-back uses US federal holidays as a placeholder. Verify against the [jurisdiction] holiday calendar before relying on the effective date."
+2. **Business-day roll-back keyed to the calendar in the manifest.** The weekend days and public holidays come from `references/jurisdictions/<code>/MANIFEST.md` → `calendar` for the code resolved in Step 0 (the contract's governing law or, if the notice must be received at the counterparty's place of business, that place — when the two differ, roll back against both and take the earlier date, noting both in `cancel_by_roll_note`). Never default to a Saturday/Sunday weekend or to US federal holidays.
+   - *Populated non-`usa` code:* read the manifest row and apply it. For `ksa` the row reads: weekend Friday and Saturday; public holidays Eid al-Fitr, Eid al-Adha, National Day (23 September), Founding Day (22 February); official dates Hijri (Umm al-Qura). If the date falls on Friday or Saturday, roll back to Thursday. If it falls on a listed holiday, roll back to the prior business day. Eid al-Fitr and Eid al-Adha are Hijri-dated and their Gregorian dates, and the length of the official holiday, are announced each year: check them for the year of the deadline and tag the entry `[verify — holiday dates announced annually]`; if they cannot be confirmed, treat the whole Eid window as non-business days for the roll-back and say so in `cancel_by_roll_note`. A contractual period stated in Hijri months or years is computed on the Hijri calendar (`civil-transactions-law.md` Art. 2 applies to statutory periods; contractual periods follow the contract's own wording) and shown in both calendars.
+   - *`usa`:* federal holidays plus the state's holidays if the governing law is a state; Saturday and Sunday roll back to Friday.
+   - *Any code whose manifest is not populated:* this is the Step 0 hard stop for that code. Do not compute an effective date for it; record `cancel_by_effective: [not populated — no rule applied]` and the calendar date only, and tell the user which folder is missing.
+   Roll BACK, never forward — forward means notice arrives after the window closes. If the manifest row is silent on a holiday the user names, add it for this entry with `[user provided]` and do not invent others.
 3. **Check the contract's own day-counting rule.** Look for "business day," "received by," "deemed received," "5:00 p.m. [local time]," or a notice-method clause. If the contract defines "business day" or specifies receipt mechanics (certified mail, email with read receipt), that definition controls. Flag any mismatch between the default roll-back and the contract's own rule.
-4. **Record BOTH dates in the register.** `cancel_by_calendar` is the raw arithmetic; `cancel_by_effective` is the last business day on which notice is effective; `cancel_by_roll_note` records why they differ (e.g., "rolled back from Sunday 2026-11-01; verify against contract's business-day definition"). Every computed `cancel_by_effective` carries a `cancel_by_provenance` tag of `[model calculation — verify against the notice clause]` so the verify flag travels with the date, not with the surrounding prose.
+4. **Record BOTH dates in the register.** `cancel_by_calendar` is the raw arithmetic; `cancel_by_effective` is the last business day on which notice is effective; `cancel_by_roll_note` records why they differ (e.g., "rolled back from Friday 2026-10-30 (weekend per `ksa` manifest); verify against contract's business-day definition"). Every computed `cancel_by_effective` carries a `cancel_by_provenance` tag in the computed-number form, with its inputs, so the verify flag travels with the date, not with the surrounding prose: `[computed — MANIFEST.md calendar, <code>; inputs: current_term_end <date>, notice_period_days <N>, weekend <days>, holidays checked <list or "Eid dates unconfirmed">; verify against the notice clause]`. For `usa` the tag reads `[model calculation — US federal/state holidays; verify against the notice clause]`.
 5. **Fire alerts off the EFFECTIVE date, not the calendar date.** Urgency bands (🔴 / 🟠 / 🟡 in Mode 2) use `cancel_by_effective`. Mode 2 output shows `cancel_by_effective` in the urgency column and surfaces `cancel_by_calendar` and `cancel_by_roll_note` in a detail column where the roll-back happened, so the reader can see it and challenge it.
 
 A Mode 2 report that prints `cancel_by: 2026-11-01` (a Sunday) with no weekday and no warning is a silently wrong effective deadline. The register is the place to catch it — once, at ingest — not later, when the window has already moved.
@@ -124,9 +147,9 @@ When saas-msa-review or vendor-agreement-review finds a renewal clause, it hands
 
 ### 🔴 Cancel-by deadline in 0–13 days
 
-| Counterparty | Cancel by | Renewal date | Annual $ | Owner | Notes |
+| Counterparty | Cancel by | Renewal date | Annual value ([currency]) | Owner | Notes |
 |---|---|---|---|---|---|
-| [name] | **[date]** | [date] | $[n] | [email] | [notes] |
+| [name] | **[date]** | [date] | [currency] [n] | [email] | [notes] |
 
 ### 🟠 Cancel-by deadline in 14–44 days
 
@@ -143,7 +166,9 @@ When saas-msa-review or vendor-agreement-review finds a renewal clause, it hands
 - [ ] [Counterparty] — pricing is uncapped; get a quote from an alternative before we lose leverage
 ```
 
-If the register has more than ~10 renewals in the window, or any time the user asks: offer the dashboard (see CLAUDE.md `## Outputs → Dashboard offer for data-heavy outputs`). Shape the offer for this output — counts by urgency tier (🔴 / 🟠 / 🟡), a cancel-by timeline, and a sortable register with counterparty, renewal date, annual $, and owner.
+If the register has more than ~10 renewals in the window, or any time the user asks: offer the dashboard (see CLAUDE.md `## Outputs → Dashboard offer for data-heavy outputs`). Shape the offer for this output — counts by urgency tier (🔴 / 🟠 / 🟡), a cancel-by timeline, and a sortable register with counterparty, renewal date, annual value in `[currency]`, and owner.
+
+**Header, disclaimer, language.** The report carries the work-product header from the profile `## Outputs` and, directly under it, for every code applied other than `usa`, the jurisdiction disclaimer line from the profile `## Jurisdiction`. Apply the bilingual house-style rule from the profile `## Outputs`: when the output language is bilingual, add the authoritative-language rendering of the bottom line (the counts per band and the recommended actions) and of the table; a non-renewal notice drafted for a counterparty in a jurisdiction whose authoritative language is not English is produced in both languages. Values are in `[currency]` from the profile; dates are Gregorian with the Hijri date alongside when the manifest calendar is Hijri. The reviewer note carries the Step 0 record line.
 
 ### Mode 3: Scan the [CLM] / e-signature tool to populate the register
 
@@ -173,6 +198,8 @@ cancellation was recorded:
 - Accept the renewal, mark next year's cancel-by now
 - Check the agreement for any other termination rights (for convenience, for cause)
 ```
+
+For a populated non-`usa` code, say what the jurisdiction file supplies on a missed window, citing the row, and nothing more: for `ksa`, `civil-transactions-law.md` carries no statutory notice window or cancellation right for B2B service or subscription renewals (absence row; Art. 440 regulates leases only), so the contract's own terms govern and the options above are contractual, not statutory. If the user asks whether a statute rescues a missed window and the file is silent, answer `[no rule in <code> files — verify]`.
 
 ## Gate: accepting or declining a renewal
 

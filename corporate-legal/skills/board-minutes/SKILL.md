@@ -24,6 +24,7 @@ Board minutes are a legal record. They need to be accurate, complete, and in a f
 
 ## Load context
 
+- `~/.claude/plugins/config/claude-for-legal/corporate-legal/CLAUDE.md` → `## Jurisdiction` (Step 0) and `## Company profile` (legal form under the local companies law; listed-company regulator)
 - `~/.claude/plugins/config/claude-for-legal/corporate-legal/CLAUDE.md` → `## Board & Secretary` section:
   - Minutes format (long-form narrative / action minutes / hybrid)
   - Minutes template extracted from seed documents (structure, resolution language, header format)
@@ -33,13 +34,36 @@ Board minutes are a legal record. They need to be accurate, complete, and in a f
 
 ---
 
+### Step 0: Resolve the applicable jurisdiction
+
+1. **Read the practice profile's `## Jurisdiction` section.** It gives the primary jurisdiction code, the footprint list (other codes the practice operates in), the output-language preference, and whether local counsel is available for escalation. Codes are ISO 3166-1 alpha-3 lowercase (`ksa`, `gbr`, `fra`, `che`, `usa`). If the section is missing or still a placeholder, stop: "The practice profile has no jurisdiction. Run the cold-start interview; nothing in this skill can run against the wrong jurisdiction."
+2. **Determine the matter's jurisdiction(s).** Start from the primary code. Then read the matter facts: governing-law clause, seat of arbitration, place of employment, jurisdiction of incorporation, place of performance. If the facts point to a code not in the profile, add it for this matter and say so in the reviewer note. A matter may have more than one code (a contract governed by English law with a Saudi counterparty and Saudi performance is `gbr` + `ksa`).
+3. **Load the jurisdiction folder for each code.** The folder is `references/jurisdictions/<code>/` in this plugin (the same tree ships at the repo root and in every runtime adapter). Read `MANIFEST.md` first.
+   - If `populated` is not `yes`: **stop for that code.** Say: "Jurisdiction `<code>` (<name>) is registered but not populated: no reference files exist for it. I will not apply another jurisdiction's rules or model knowledge in its place. Options: (1) populate `references/jurisdictions/<code>/` (see README, 'How to add a jurisdiction'), (2) route this matter to local counsel, (3) tell me to proceed with the analysis limited to the populated jurisdictions in this matter, with every finding for `<code>` marked `[not populated — no rule applied]`." Wait for the answer. Never fall back silently.
+   - If the code is `usa`: there is no folder. Follow this skill's US path (the upstream doctrine and the upstream research connectors, CourtListener or Westlaw, with the upstream "no silent supplement" rule). Label findings `[usa]`.
+   - If `populated` is `yes`: read `INDEX.md`, then the instrument files this skill names in its "Jurisdiction files" list. A row tagged `[settled — last confirmed YYYY-MM-DD]` may be applied and cited by article. A row tagged `[model knowledge — verify]` may be applied only with that tag carried onto the finding. If a rule this skill needs is not in the files at all, do not supply it from memory: say what is missing, tag the gap `[no rule in <code> files — verify]`, and continue only with the rules that exist.
+4. **Multi-jurisdiction matters.** Run the relevant files side by side. Label every finding with its code in square brackets, `[ksa]`, `[gbr]`, `[usa]`, and never merge two jurisdictions' rules into one sentence. Where the codes conflict (a clause valid under one law and reducible under another), state both and flag `[review]` for the lawyer to decide which governs.
+5. **Research step (when a rule must be quoted or its currency checked).** Use the portal named in `MANIFEST.md` → `research_tool`. For `ksa`: `python3 scripts/fetch-law.py --portal boe --id <guid> --lang ar` (GUIDs in `SOURCES.md`), or `curl -sS https://laws.boe.gov.sa/BoeLaws/Laws/LawDetails/<guid>/1`; the built-in web-fetch tool rejects the portal's TLS chain. Quote the article, tag `[BOE — Arabic]` (or `[BOE — official English]` when quoting the translation), and check the status line and the "تعديلات المادة" block for amendments. If the fetch fails or the article is not found, apply the "no silent supplement" rule: report the failure and stop, or continue with the rule tagged `[model knowledge — verify]` only if the user says so.
+6. **Calendar and language.** Take the weekend, public-holiday, calendar (Hijri or Gregorian) and currency rules from `MANIFEST.md`. Compute every date and roll-back against that calendar, never against a Saturday/Sunday weekend or US federal holidays. Produce the deliverable in English; when the profile's output-language preference is bilingual, or the manifest's authoritative language is not English and counterparty-facing text is produced, add the authoritative-language rendering of the bottom line, the findings table, and any counterparty-facing text, using the spellings in the manifest's `output_language_rule`.
+7. **Header and disclaimer.** Prepend the manifest's `disclaimer` line under the work-product header for every deliverable that applies a non-`usa` jurisdiction. For `ksa`: "Arabic text is authoritative; English translations are for convenience; a licensed Saudi lawyer must review before reliance." with its Arabic rendering from the manifest.
+8. **Record in the reviewer note.** `Jurisdiction: <codes applied>; files: <list>; portal fetched: yes/no; unpopulated codes: <list or none>.`
+
+**Jurisdiction files this skill loads:**
+
+- `references/jurisdictions/<code>/MANIFEST.md` — authoritative language, disclaimer, calendar, research tool (Step 0; Step 5).
+- `references/jurisdictions/<code>/companies-law.md` — notice, quorum, majorities, virtual attendance, language of record, minutes register (Step 1.5; Step 2 quorum; Step 4 skeleton). For `ksa`: JSC board — Art. 80 (call, quorum of half, majority, casting vote, technology), Art. 81 (proxies only under an articles clause, one per member), Art. 83 (secretary drafts; signed by chair, attending directors and secretary; special register; electronic signature and recording), Art. 28 (named dissents), Art. 71 (interest declarations and abstention), Art. 76 (attendance disclosure); assemblies — Arts. 90-91 and Regs Art. 23 (convening, 21-day notice content), Arts. 92-93 (quorum and majorities), Art. 97 (minutes content and signatories), Art. 84 with Regs Arts. 24-30 (electronic participation, proxies, authentication); LLC assemblies — Arts. 165, 168-169 (21-day notice, majorities); simplified JSC — Art. 146 (five-day notice); Art. 7 (Arabic articles; the Law is silent on the language of minutes — see the Art. 83 row's `[model knowledge — verify]` note).
+- `references/jurisdictions/<code>/corporate-governance-regulations.md` — listed JSCs only (Step 1.5; Step 4). For `ksa`: CGR Art. 30 (five-day notice, half-and-at-least-three quorum, quarterly minimum), Arts. 31 and 33 (agenda approval, objections, detailed dissent), Art. 35 with Companies Law Art. 83 (minutes content and signatures), Art. 28(14)-(15) with Art. 42 (interest disclosure, exclusion from deliberation and count), Arts. 44-45 (competing business recorded), Arts. 47-50 (committee minutes: 3-5 members, majority quorum, casting vote, all-attendee signatures), Art. 2(c) for a Parallel Market company.
+- `references/jurisdictions/<code>/filing-calendar.md` — which body must meet by when (Step 1). For `ksa`: the LLC Arts. 165-166 and JSC Art. 88 rows; never apply JSC notice periods to a simplified JSC.
+
+---
+
 ## Step 1: Identify the meeting
 
 ### Calendar detection
 
 If the calendar connector is authorized, search for upcoming events matching board and committee keywords:
 
-**Search terms:** "Board of Directors", "Board Meeting", "Audit Committee", "Compensation Committee", "Comp Committee", "Nominating", "Nom/Gov", "Governance Committee", "Special Committee", "Board of Directors — [Company]"
+**Search terms:** "Board of Directors", "Board Meeting", "Audit Committee", "Compensation Committee", "Comp Committee", "Nominating", "Nom/Gov", "Governance Committee", "Special Committee", "Board of Directors — [Company]"; and, when the profile's jurisdiction has a non-English authoritative language, the equivalents in that language — for `ksa`: "مجلس الإدارة" (board of directors), "اجتماع مجلس الإدارة" (board meeting), "لجنة المراجعة" (audit committee), "لجنة الترشيحات والمكافآت" (nomination and remuneration committee), "لجنة المخاطر" (risk committee), "اللجنة التنفيذية" (executive committee), "الجمعية العامة" (general assembly), "جمعية الشركاء" (partners' assembly)
 
 **Time window:** Look 30 days forward. If no upcoming meeting is found, look 14 days back (minutes are often drafted after the fact).
 
@@ -58,10 +82,26 @@ If the calendar connector is not authorized or returns nothing: ask directly —
 
 Once the meeting is identified, confirm or fill in:
 
-- **Meeting type:** Full Board of Directors / [Committee name]
-- **Date and time**
+- **Meeting type:** Full Board of Directors / [Committee name] / general or partners' assembly
+- **Date and time** (Gregorian, and Hijri where the manifest's calendar row says official dates are Hijri)
 - **Location or platform** (in-person address / Zoom / Teams / telephonic)
-- **Called by / Notice:** Was proper notice given? (Yes / waived — waiver of notice is a common exhibit)
+- **Called by / Notice:** Was proper notice given? Under `usa`: (Yes / waived — waiver of notice is a common exhibit). Under a populated non-`usa` code: the notice period, content and method come from Step 1.5, and whether waiver is available is answered from the file or tagged `[no rule in <code> files — verify]` — do not assume a waiver exhibit cures short notice.
+
+---
+
+## Step 1.5: Jurisdiction formalities
+
+For a populated non-`usa` code, read the formalities for this body and this entity type from `references/jurisdictions/<code>/companies-law.md` — and, for a listed JSC, `corporate-governance-regulations.md` — before drafting. Apply the row for this body and entity type only; never carry a JSC rule to an LLC or a simplified JSC. Record each item with its file, article and tag in the drafting notes; where a row is tagged `[model knowledge — verify]`, carry the tag; where a rule is missing, say so and tag `[no rule in <code> files — verify]`. For `usa`, the charter and bylaws plus the upstream research connectors answer the same items.
+
+| Formality | `ksa` rows (`companies-law.md` unless stated) |
+|---|---|
+| Notice period and content | JSC board: Art. 80 (call by the chairman; the articles govern the period — if the articles are not on file, say so and tag the period `[no rule in ksa files — verify]`); listed JSC: `corporate-governance-regulations.md` Art. 30 (invitation with agenda and papers at least five days before, shorter for an emergency meeting); general assemblies: Arts. 90-91 with Regs Art. 23 (21-day notice and its content); LLC partners' assembly: Art. 165 (21-day notice); simplified JSC: Art. 146 (five days) |
+| Quorum and majority | JSC board: Art. 80 (half the members; majority of those present; chairman's casting vote); listed JSC: CGR Art. 30(d) (the greater of half the directors, rounded up, and three, or the bylaws' higher figure — show the board size used and tag `[computed from user-supplied inputs]`); ordinary assembly: Art. 92 (one quarter of voting shares, or the articles' higher figure up to one half; second meeting rule); extraordinary assembly: Art. 93 (one half, second and third meeting rules; two-thirds majority, three-quarters matters); LLC: Arts. 165, 168-169 (majority per the articles; Art. 172 thresholds for amendments); committees of a listed JSC: CGR Arts. 47-50 (three to five members, majority quorum, casting vote) |
+| Virtual attendance and voting | JSC board: Art. 80 (participation and voting by technology permitted); assemblies: Art. 84 with Regs Arts. 24-30 (electronic participation, proxies, authentication); proxies at board level only under an articles clause, one per member (Art. 81) |
+| Language of record | Art. 7 requires Arabic for the articles only; the Law is silent on the language of minutes — the Art. 83 row's practice note (bilingual minutes with an Arabic text) is `[model knowledge — verify]`: default to bilingual minutes with an Arabic text and flag the point rather than assert it |
+| Minutes register and signatures | JSC board: Art. 83 (secretary prepares; signed by the chair of the meeting, the directors present and the secretary; entered in a special register signed by the chairman and the secretary; electronic signature and recording permitted); assemblies: Art. 97 (content and signatories); LLC: Art. 165(5) (register); listed JSC: CGR Art. 35 with Art. 83 (content: discussions, place, date, times, attendance, votes, dissents), Arts. 31 and 33 (objections and detailed dissent recorded), Art. 28(14)-(15) with Art. 42 (interest disclosure; conflicted director excluded from deliberation and count), Arts. 44-45 (competing business recorded); named dissents: Art. 28; interest declarations: Art. 71; failure to keep minutes is fineable: Art. 262(h) |
+
+Where a row must be quoted or its currency checked, use the research step: `python3 scripts/fetch-law.py --portal boe --id <guid> --lang ar` (GUIDs in `references/jurisdictions/<code>/SOURCES.md`; the built-in web-fetch tool rejects the portal's TLS chain, use the script or `curl`), quote the article, tag `[BOE — Arabic]` or `[BOE — official English]`. If the fetch fails, apply the "no silent supplement" rule: report the failure and stop, or continue on the file's row with its tag only if the user says so. An unpopulated code is a hard stop (Step 0, item 3): no minutes skeleton is built against it.
 
 ---
 
@@ -88,8 +128,8 @@ Ask for the attendee list, or offer to pull from the calendar invite if the conn
 
 **Quorum:**
 
-- Check the charter and bylaws for the quorum requirement. If the charter is silent, research the applicable state corporate law for the default rule for this entity type. Record what you confirmed (source and pinpoint) in the drafting notes.
-- Confirm quorum was present. If not: stop and flag before drafting. Do not produce minutes that imply a valid meeting occurred. Surface the question to outside counsel — the remediation path (ratification, re-meeting, written consent, other) depends on the state of incorporation and the nature of the action.
+- Check the charter, bylaws or articles for the quorum requirement. If they are silent, take the default for this body and entity type from Step 1.5: for a populated non-`usa` code, the jurisdiction file's row (for `ksa`: `companies-law.md` Art. 80 for a JSC board, Arts. 92-93 for assemblies, Arts. 165, 168-169 for an LLC; `corporate-governance-regulations.md` Art. 30(d) for a listed JSC board, Arts. 47-50 for its committees); for `usa`, the applicable state corporate law via the upstream research connectors. Record what you confirmed (file and article with its tag, or source and pinpoint) in the drafting notes. If the file has no row for this body (for `ksa`: an unlisted JSC's committee), say so and tag `[no rule in <code> files — verify]`.
+- Confirm quorum was present. If not: stop and flag before drafting. Do not produce minutes that imply a valid meeting occurred. Surface the question to outside counsel — the remediation path (ratification, re-meeting, written consent or resolution by circulation, other) depends on the jurisdiction of incorporation (the file's rows for a non-`usa` code, e.g. for `ksa` the second-meeting rules in Arts. 92-93 and 166; state law for `usa`) and the nature of the action.
 
 ---
 
@@ -113,7 +153,7 @@ Ask for the meeting materials. These are the source for the agenda items and any
 
 ## Step 4: Draft the minutes
 
-Use the house format from `~/.claude/plugins/config/claude-for-legal/corporate-legal/CLAUDE.md`. Do not default to a generic format. The seed minutes are the template — replicate the structure, the header, the resolution language, the level of discussion detail.
+Use the house format from `~/.claude/plugins/config/claude-for-legal/corporate-legal/CLAUDE.md`. Do not default to a generic format. The seed minutes are the template — replicate the structure, the header, the resolution language, the level of discussion detail. For a populated non-`usa` code, the skeleton must also carry every item Step 1.5 requires the record to contain (for `ksa`: place, date, start and end times, attendance, votes, named dissents, interest declarations, and the signature lines for the chair, every attending director and the secretary per `companies-law.md` Art. 83 / CGR Art. 35) — the house format decides the wording, the file decides what may not be omitted. Language of record per Step 1.5.
 
 ### Standard structure (adapt to house format)
 
@@ -202,21 +242,25 @@ Do not produce the final adoption-ready version past this gate without an explic
 
 ## Step 5: Output and review prompts
 
-Produce the full draft. The minutes themselves are a corporate record, not privileged; do not apply the work-product header to the minutes as circulated. The drafting notes, placeholder flags, and review checklist below are work product — prepend the work-product header from `~/.claude/plugins/config/claude-for-legal/corporate-legal/CLAUDE.md` `## Outputs` (it differs by user role — see `## Who's using this`):
+Produce the full draft. The minutes themselves are a corporate record, not privileged; do not apply the work-product header to the minutes as circulated. The drafting notes, placeholder flags, and review checklist below are work product — prepend the work-product header from `~/.claude/plugins/config/claude-for-legal/corporate-legal/CLAUDE.md` `## Outputs` (it differs by user role — see `## Who's using this`), then, for a non-`usa` code, the jurisdiction disclaimer line from the profile `## Jurisdiction` / the manifest. Apply the bilingual house-style rule from `## Outputs`: when the profile's output language is bilingual, or Step 1.5 set the language of record to bilingual, the minutes (a record that will be filed or inspected in the authoritative language) are rendered in that language beside the English, and the bottom line of the drafting notes and the review checklist table likewise, using the manifest's spellings; amounts in resolutions are in the profile currency and dates follow the manifest's calendar.
 
 ```
 [WORK-PRODUCT HEADER — per plugin config ## Outputs — differs by role; see `## Who's using this`]
+[JURISDICTION DISCLAIMER LINE — from the profile ## Jurisdiction, for a non-usa code]
 ```
 
 After the draft, add a review checklist:
 
 ```
 [WORK-PRODUCT HEADER — per plugin config ## Outputs — differs by role; see `## Who's using this`]
+[JURISDICTION DISCLAIMER LINE — for a non-usa code]
 
 REVIEW CHECKLIST — please verify before circulating:
 
 □ All directors confirmed present/absent (check against actual attendance)
-□ Quorum confirmed correct
+□ Notice given per Step 1.5 ([file Art. N with tag / charter clause])
+□ Quorum confirmed correct against Step 1.5 ([file Art. N with tag / charter clause])
+□ Language of record and signature lines match Step 1.5 (all attending directors and the secretary where the file requires it; register entry noted)
 □ Resolution language matches what was actually approved (check wording carefully)
 □ Votes recorded correctly — any abstentions or dissents to note?
 □ Exhibits numbered and referenced correctly
@@ -224,6 +268,8 @@ REVIEW CHECKLIST — please verify before circulating:
 □ Any conflicts of interest disclosed? (Director recusal to note if applicable)
 □ Time of adjournment to fill in
 □ Outside counsel reviewed? (If required by your process)
+
+Reviewer note: Jurisdiction: [codes applied]; files: [list]; portal fetched: yes/no; unpopulated codes: [list or none].
 ```
 
 Flag any sections where content is a placeholder and needs the attorney's input before the minutes are accurate.
@@ -236,7 +282,7 @@ Add as a final pre-adoption note on the draft, stripped before adoption:
 
 ## Written consents
 
-For drafting written consents in lieu of a meeting, use `/corporate-legal:written-consent`. That skill handles precedent search, state-law confirmation, and the scope warning for major one-off actions.
+For drafting written consents in lieu of a meeting (or, under a populated non-`usa` code, resolutions by circulation), use `/corporate-legal:written-consent`. That skill handles precedent search, confirmation of the jurisdiction's majority and notice rules, and the scope warning for major one-off actions.
 
 ---
 

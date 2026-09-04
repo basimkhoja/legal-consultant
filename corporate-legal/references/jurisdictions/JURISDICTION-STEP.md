@@ -1,20 +1,8 @@
+# Jurisdiction resolution step (canonical wording)
+
+Every skill in the in-scope plugins carries this step in its own text, as "Step 0", before it reads a document or applies a table. This file is the single source for the wording; a skill copies it rather than pointing at it, because the upstream design rule is that the skill must behave correctly on its own and the plugin `CLAUDE.md` guardrails are only the net. When this wording changes, update the skills that carry it (`grep -rl "Step 0: Resolve the applicable jurisdiction"`).
+
 ---
-name: expansion-update
-description: >
-  Update the status of an in-progress international expansion project —
-  recalculates what is now unblocked, flags anything overdue, and surfaces
-  the next priorities. Use when work has happened since the last session and
-  the expansion tracker needs to reflect the current state.
-argument-hint: "[country name]"
----
-
-# /expansion-update
-
-Returns to an open expansion tracker and updates item status based on what
-has happened since the last session. Recalculates what is now unblocked,
-flags anything overdue, and surfaces the next priorities.
-
-## Instructions
 
 ### Step 0: Resolve the applicable jurisdiction
 
@@ -30,65 +18,21 @@ flags anything overdue, and surfaces the next priorities.
 7. **Header and disclaimer.** Prepend the manifest's `disclaimer` line under the work-product header for every deliverable that applies a non-`usa` jurisdiction. For `ksa`: "Arabic text is authoritative; English translations are for convenience; a licensed Saudi lawyer must review before reliance." with its Arabic rendering from the manifest.
 8. **Record in the reviewer note.** `Jurisdiction: <codes applied>; files: <list>; portal fetched: yes/no; unpopulated codes: <list or none>.`
 
-For this skill the "matter" in item 2 is the tracker's country (`country` and `country_slug` in the tracker file). Re-resolve it on every update: if the folder has become populated since kickoff, offer to pre-fill the still-open outside-counsel items from the files (each with the file's tag and a "currency check" label) per the `international-expansion` reference skill; if it has become unpopulated or was never populated, leave the items as counsel questions and never fill them from model knowledge.
+---
 
-**Jurisdiction files this skill loads:** `references/jurisdictions/<code>/MANIFEST.md` (populated flag, calendar for due dates and overdue checks, currency); for a populated code, the same instrument files as the `international-expansion` reference skill lists (`labor-law.md`, `saudization-nitaqat.md`, `platform-obligations.md`, `social-insurance-law.md`, `personal-data-protection-law.md`, `investment-law.md`, `companies-law.md`, `labor-dispute-route.md`, `playbook-defaults.md` Labor table), read only for the open items being pre-filled.
+## Provenance tags added by the fork
 
-1. Load `~/.claude/plugins/config/claude-for-legal/employment-legal/CLAUDE.md`.
+These join the upstream tag vocabulary; the upstream tags keep their meaning.
 
-2. Identify the tracker file: `~/.claude/plugins/config/claude-for-legal/employment-legal/expansion-[slug].yaml`. If it doesn't
-   exist, respond: "No expansion tracker found for [country]. Run
-   `/employment-legal:expansion-kickoff [country]` to start one."
+- `[BOE — Arabic]` — the article text was read from laws.boe.gov.sa in Arabic this session or on the date shown in the reference file's `[settled — last confirmed …]` tag.
+- `[BOE — official English]` — read from the Bureau of Experts translation.
+- `[authority — <name>]` — read from the issuing authority's published document (HRSD, MoC, MISA, CMA, GAC, SDAIA, MoJ, SCCA, GOSI).
+- `[settled — last confirmed YYYY-MM-DD]` — upstream tag, used in the reference files with the date the primary text was read.
+- `[model knowledge — verify]` — upstream tag; the default for anything not read from a source.
+- `[not populated — no rule applied]` — a finding for a jurisdiction whose folder is not populated; no analysis was done for it.
+- `[no rule in <code> files — verify]` — the jurisdiction is populated but the files do not cover the point; nothing was supplied from memory.
+- `[ksa]`, `[gbr]`, `[fra]`, `[che]`, `[usa]` — jurisdiction labels on findings in multi-jurisdiction matters.
 
-3. Read the tracker. Show the current state:
+## Computed numbers
 
-```
-[Country] Expansion — last updated [date]
-Open: [N] | In progress: [N] | Done: [N] | Blocked: [N]
-
-Next priorities (open items with earliest due dates or highest-dependency):
-  [item] — owner: [owner]
-  [item] — owner: [owner]
-  [item] — owner: [owner]
-```
-
-4. Ask for updates in a single prompt — do not ask about each item one by one:
-
-   > Which items have moved since we last looked? Tell me what's changed
-   > (e.g., "EOR decision made — going with Deel", "outside counsel engaged —
-   > call scheduled for Thursday", "PE analysis still open, waiting on tax").
-   > You can also add new items or change due dates.
-
-5. Apply updates to the tracker file. For any item newly marked `done`,
-   check whether it unblocks other items and flag those as now actionable.
-
-6. If any item has a due date that has passed and is still `open` or
-   `in-progress`, flag it (compute "passed" and any roll-back against the
-   calendar in the target's `MANIFEST.md` — weekend and public holidays from
-   the manifest, never a Saturday/Sunday weekend or US federal holidays):
-
-```
-⚠️ Overdue: [item] — was due [date], owner: [owner]
-```
-
-7. Write the updated tracker. Prepend the work-product header and, for a country that is not `usa`, the jurisdiction disclaimer line from the practice profile `## Outputs`; apply the bilingual house-style rule from the plugin CLAUDE.md `## Outputs` where the profile asks for it. Confirm:
-
-```
-Tracker updated — [N] items closed, [N] still open.
-Next priority: [top open item].
-```
-
-## Examples
-
-```
-/employment-legal:expansion-update Germany
-```
-
-```
-/employment-legal:expansion-update
-(will ask which country if multiple trackers exist)
-```
-
-> Detailed tracker schema, item-status rules, and dependency logic live in the
-> `international-expansion` reference skill — load it before doing substantive
-> work.
+Any number a skill computes from a jurisdiction file (end-of-service award, compensation for invalid termination, notice date, penalty reduction, filing deadline) carries the tag on the number itself, in this form: `SAR 41,250 [computed — labor-law.md Arts. 84-85, settled 2026-09-04; inputs: last wage SAR 15,000, service 4y 6m, employer termination]`. The inputs travel with the number so a reviewer can recompute it. If any input is missing, ask; do not assume.

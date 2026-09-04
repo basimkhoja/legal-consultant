@@ -32,6 +32,12 @@ Rules for every skill, command, and agent in this plugin:
 **Primary jurisdiction:** [PLACEHOLDER] *(From company-profile.md — edit there to change across all plugins)*
 **Legal team size:** [PLACEHOLDER] *(From company-profile.md — edit there to change across all plugins)*
 **Escalation:** [PLACEHOLDER — outside counsel firm, GC name, or board escalation path]
+**Commercial registration number and registry:** [PLACEHOLDER — e.g. CR 1010XXXXXX, Ministry of Commerce]
+**Legal form under the local companies law:** [PLACEHOLDER — from `references/jurisdictions/<code>/companies-law.md` entity types]
+**Foreign-investment registration:** [PLACEHOLDER — e.g. MISA investment registration certificate number and activity, or N/A]
+**Statutory registrations:** [PLACEHOLDER — tax/zakat/VAT number, social-insurance number, labour-platform establishment number, chamber membership, municipal licence]
+**Ultimate beneficial ownership filing:** [PLACEHOLDER — filed / date of last annual confirmation / N/A]
+**Listed-company regulator and exchange:** [PLACEHOLDER — e.g. CMA / Tadawul, SEC / NYSE, or not listed]
 
 **Practice setting:** [PLACEHOLDER — Solo/small firm | Midsize/large firm | In-house | Government/legal aid/clinic] *(From company-profile.md — edit there to change across all plugins)*
 
@@ -56,6 +62,24 @@ Rules for every skill, command, and agent in this plugin:
 
 The deliverable should read like a partner wrote it. The meta-commentary goes in a reviewer note above the header or a separate message, not in the document.
 
+## Jurisdiction
+
+*Written by the cold-start interview. Every skill reads this section first (Step 0: Resolve the applicable jurisdiction) and loads `references/jurisdictions/<code>/` for each code. See `references/jurisdictions/REGISTRY.md` for the codes and their populated status.*
+
+**Primary jurisdiction:** [PLACEHOLDER — ISO 3166-1 alpha-3 lowercase code, e.g. `ksa`]
+**Footprint (other jurisdictions this practice operates in):** [PLACEHOLDER — list of codes, or none]
+**Authoritative language of the primary jurisdiction:** [PLACEHOLDER — from the jurisdiction manifest]
+**Output language:** [PLACEHOLDER — English | English plus the authoritative language for the bottom line, findings table, and counterparty-facing text (bilingual) | authoritative language only]
+**Calendar for deadlines:** [PLACEHOLDER — from the jurisdiction manifest: weekend days, public holidays, Hijri or Gregorian]
+**Currency for thresholds:** [PLACEHOLDER — e.g. SAR]
+**Primary-source portal:** [PLACEHOLDER — from the manifest, e.g. https://laws.boe.gov.sa]
+**Local counsel available for escalation:** [PLACEHOLDER — name / firm / N/A; a licensed lawyer admitted in the primary jurisdiction]
+**Jurisdiction playbook defaults accepted:** [PLACEHOLDER — which rows of `references/jurisdictions/<code>/playbook-defaults.md` the user accepted at cold-start, and which they changed]
+
+**Unpopulated jurisdiction rule.** If any code above resolves to a manifest with `populated: no`, every skill stops for that code and says so. It never applies another jurisdiction's rules or model knowledge in its place.
+
+---
+
 ## Available integrations
 
 | Integration | Status | Fallback if unavailable |
@@ -75,6 +99,10 @@ The deliverable should read like a partner wrote it. The meta-commentary goes in
 
 - If Role is **Lawyer / legal professional**: `PRIVILEGED & CONFIDENTIAL — ATTORNEY WORK PRODUCT — PREPARED AT THE DIRECTION OF COUNSEL`
 - If Role is **Non-lawyer** (either type): `RESEARCH NOTES — NOT LEGAL ADVICE — REVIEW WITH A LICENSED ATTORNEY, SOLICITOR, BARRISTER, OR OTHER AUTHORISED LEGAL PROFESSIONAL IN YOUR JURISDICTION BEFORE ACTING`
+
+**Jurisdiction disclaimer line.** For every deliverable that applies a jurisdiction other than `usa`, add the manifest's `disclaimer` line directly under the work-product header, in English and in the authoritative language. For `ksa`: `Arabic text is authoritative; English translations are for convenience; a licensed Saudi lawyer must review before reliance.` / `النص العربي هو النص المعتمد، والترجمة الإنجليزية للاستئناس فقط، ويجب مراجعة محامٍ سعودي مرخص قبل الاعتماد على هذا المستند.` The line is part of the header: it is never stripped from an internal deliverable, and it stays on counterparty-facing text.
+
+**Bilingual house style.** When `## Jurisdiction` → Output language is bilingual, or the deliverable contains counterparty-facing text in a jurisdiction whose authoritative language is not English, produce the deliverable in English and add the authoritative-language rendering of (1) the bottom line, (2) the findings table, and (3) every counterparty-facing passage (redline language, letters, notices). Legal terms in the rendering use the spellings the jurisdiction's official translations use (for `ksa`, the Bureau of Experts glossary: e.g. "end-of-service award" for مكافأة نهاية الخدمة, "compensation" for تعويض, "work regulations" for لائحة تنظيم العمل). Do not translate the analysis paragraphs unless the profile says authoritative-language only.
 
 **The header's protection is jurisdiction-specific.** "Attorney work product" is a US doctrine (FRCP 26(b)(3)). It does not exist in most other legal systems, and asserting it on a document does not create it:
 
@@ -166,7 +194,7 @@ A wrong premise propagated through three paragraphs of analysis is harder to cat
 
 **When disagreeing with a user's cited statute, quote the text or decline to characterize it.** If the user (or a deal-team note, or a sell-side disclosure) cites a statute for a proposition you don't think is correct, and you don't have the statute text available from a connected research tool or the VDR, do not invent a description of what the statute says. Say instead: "That section doesn't match what I'd expect a [bulk-sales notice / successor-liability / whatever] requirement to say — I'd need to pull the actual text to tell you what it actually covers. `[statute unretrieved — verify]`" Then either (a) retrieve the text via the configured research tool and quote it, (b) ask the user to paste the text, or (c) flag for outside counsel. A confident wrong description of a real statute is worse than "I don't know" — a deal-team memo citing a fabricated subchapter is harder to un-believe than a gap. Applies in every skill that characterizes a statute.
 
-**Pre-flight check before any skill that cites authority.** Test whether a research connector (Westlaw, CourtListener, or a statute/regulator MCP) is actually responding, not just configured. If none is, record it in the **Sources:** line of the reviewer note (see `## Outputs`) — e.g., `not connected — cites from training knowledge, verify before relying`. Do not emit a standalone banner above the header. The reviewer note is the single place this signal lives; per-citation `[model knowledge — verify]` tags remain inline.
+**Pre-flight check before any skill that cites authority.** Test whether a research connector (Westlaw, CourtListener, or a statute/regulator MCP) is actually responding, not just configured. If none is, record it in the **Sources:** line of the reviewer note (see `## Outputs`) — e.g., `not connected — cites from training knowledge, verify before relying`. Do not emit a standalone banner above the header. The reviewer note is the single place this signal lives; per-citation `[model knowledge — verify]` tags remain inline. **Fork addition:** for a non-`usa` primary jurisdiction, the research source is the portal named in `references/jurisdictions/<code>/MANIFEST.md` → `research_tool`; probe it (for `ksa`, `scripts/fetch-law.py --portal boe --index` or a `curl` of the portal home) and record `portal: laws.boe.gov.sa ✓ reachable | unreachable` in the Sources line. The upstream connectors are probed only when `usa` is in the footprint.
 
 **Source tags are derived from what you actually did, not what you'd like to claim.**
 
@@ -184,6 +212,10 @@ Do not promote a tag to a more trustworthy tier because the citation "seems righ
 - `[review]` — a judgment call the attorney needs to make. Not a factual gap; a place where the skill surfaced a position the lawyer has to decide.
 - `[Westlaw]` / `[CourtListener]` / `[Trellis]` / `[Descrybe]` / `[USPTO]` / `[statute / regulator site]` / `[user provided]` — where a cite actually came from. Provenance, not confidence. Only use these when the cite literally appeared in that source in this session.
 - `[VERIFY: …]` / `[UNCERTAIN: …]` — expanded forms of `[verify]` used in brief-drafting and chronology skills with the specific claim spelled out. Same intent.
+- `[BOE — Arabic]` / `[BOE — official English]` / `[authority — <name>]` — fork tags for the primary-source portal and issuing authorities of a non-US jurisdiction; only when the text was fetched or read from that source. `[settled — last confirmed YYYY-MM-DD]` on a row of a `references/jurisdictions/<code>/` file means the primary text was read on that date.
+- `[not populated — no rule applied]` / `[no rule in <code> files — verify]` — the jurisdiction folder is unpopulated, or populated but silent on the point; nothing was supplied from memory.
+- `[ksa]` / `[gbr]` / `[fra]` / `[che]` / `[usa]` — jurisdiction labels on findings in multi-jurisdiction matters.
+- `[computed — <file> <articles>, settled <date>; inputs: …]` — on every number a skill computes from a jurisdiction file; the inputs travel with the number.
 
 A reviewer-note shorthand like "CourtListener verified" is honest only when a research tool actually returned the cite — it describes what the tool did, not what the skill's output is. The skill's output is never "verified" by the skill itself; the reader is what verifies.
 
@@ -256,6 +288,9 @@ The skill's default frameworks, tests, statutes, and procedures are often US-cen
    - **Route to a specialist.** "A [jurisdiction] practitioner should make this call. Here's what to ask them: [the specific question]."
    - **Flag the gap and continue with a caveat.** "I'll run the US framework as a starting structure, but every conclusion is tagged `[US framework — verify against [jurisdiction] law]`."
 5. **Never produce a confident answer using the wrong jurisdiction's law.** Confident-and-wrong is worse than uncertain-and-flagged. A lawyer who catches you applying *Alice* to their German patent application stops trusting everything else.
+
+
+**Fork addition: Step 0 replaces "if no framework".** Every skill in this plugin now carries "Step 0: Resolve the applicable jurisdiction" (canonical wording in `references/jurisdictions/JURISDICTION-STEP.md`). Step 2 above is answered by the jurisdiction folder: a populated `references/jurisdictions/<code>/` is the framework. Steps 3 and 4 apply only when the code is `usa` (upstream path) or when the folder is populated but silent on the point (tag `[no rule in <code> files — verify]`). An unpopulated folder is a hard stop, not a caveat: option "flag the gap and continue with a US caveat" is not available for it.
 
 ## Retrieved-content trust
 
@@ -449,7 +484,7 @@ When a skill doesn't know which matter is active and workspaces are enabled, it 
 
 **Active entities:** [PLACEHOLDER — N entities]
 **Key jurisdictions:** [PLACEHOLDER — list]
-**Registered agent:** [PLACEHOLDER — CT Corp / National Registered Agents / in-house / per jurisdiction]
+**Filing agent (registered agent, corporate-services provider, government-relations officer, or in-house):** [PLACEHOLDER — per jurisdiction]
 
 **Entity management system:** [PLACEHOLDER — Athena / Kira / Blueprint / manual spreadsheet]
 **Cap table tool:** [PLACEHOLDER — Carta / Shareworks / Ledgr / manual / n/a]
@@ -467,9 +502,11 @@ When a skill doesn't know which matter is active and workspaces are enabled, it 
 **Entity table:**
 *Extracted from org chart upload, or built from interview answers.*
 
-| Entity name | Type | Jurisdiction | Owner | Ownership % | Status |
-|---|---|---|---|---|---|
-| [PLACEHOLDER] | [Corp/LLC/Ltd] | [PLACEHOLDER] | [PLACEHOLDER] | [PLACEHOLDER] | [Active/Dormant] |
+| Entity name | Local type | Jurisdiction code | Registry number | Owner | Ownership % | Status |
+|---|---|---|---|---|---|---|
+| [PLACEHOLDER] | [type under the jurisdiction's companies law, e.g. LLC / JSC / simplified JSC / branch] | [ISO code, e.g. `ksa`] | [CR / registry number] | [PLACEHOLDER] | [PLACEHOLDER] | [Active/Dormant] |
+
+*Filing calendars are indexed by jurisdiction code and local entity type, from `references/jurisdictions/<code>/filing-calendar.md`; an entity without a local type is `type_unknown` and gets no computed deadline.*
 
 ---
 

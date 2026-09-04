@@ -13,6 +13,7 @@ argument-hint: "[--init | --contracts | --report | --update | --export [--format
 
 # /integration-management
 
+0. Run Step 0 (resolve the applicable jurisdiction) below; the acquired entity's code decides the Day-1/30/90/180 variants in Mode 1 Step 3 and the calendar every phase date is counted on.
 1. Load `deal-context.md` for deal code, target, close date, deal lead.
 2. Load `integration-tracker.yaml` if it exists (or create on --init).
 3. Use the workflow below.
@@ -55,6 +56,7 @@ items from `closing-checklist.yaml` if it exists.
 metadata:
   deal_code: "[code]"
   target: "[company name]"
+  jurisdiction_codes: "[codes of the acquired entities, e.g. [ksa, usa/DE] — phase dates counted on each code's manifest calendar]"
   close_date: "[YYYY-MM-DD]"
   deal_lead: "[name]"
   outside_counsel: "[firm and lead attorney]"
@@ -108,7 +110,8 @@ contracts:
   workstream: "[legal / hr / it / finance / real-estate / other]"
   priority: "[critical / high / medium / low]"
   deadline: "[YYYY-MM-DD or null]"
-  deadline_basis: "[pa-obligation / regulatory / best-practice]"
+  deadline_basis: "[pa-obligation / regulatory / best-practice — for a regulatory item under a non-usa code: <file> Art. N with the row's tag]"
+  jurisdiction_code: "[code the item arises under]"
   status: "[not_started / in_progress / complete / blocked / deferred]"
   blocker: "[description or null]"
   depends_on: "[item id or null]"
@@ -145,6 +148,36 @@ contracts:
   notes: ""
   last_updated: "[date]"
 ```
+
+---
+
+### Step 0: Resolve the applicable jurisdiction
+
+1. **Read the practice profile's `## Jurisdiction` section.** It gives the primary jurisdiction code, the footprint list (other codes the practice operates in), the output-language preference, and whether local counsel is available for escalation. Codes are ISO 3166-1 alpha-3 lowercase (`ksa`, `gbr`, `fra`, `che`, `usa`). If the section is missing or still a placeholder, stop: "The practice profile has no jurisdiction. Run the cold-start interview; nothing in this skill can run against the wrong jurisdiction."
+2. **Determine the matter's jurisdiction(s).** Start from the primary code. Then read the matter facts: governing-law clause, seat of arbitration, place of employment, jurisdiction of incorporation, place of performance. If the facts point to a code not in the profile, add it for this matter and say so in the reviewer note. A matter may have more than one code (a contract governed by English law with a Saudi counterparty and Saudi performance is `gbr` + `ksa`).
+3. **Load the jurisdiction folder for each code.** The folder is `references/jurisdictions/<code>/` in this plugin (the same tree ships at the repo root and in every runtime adapter). Read `MANIFEST.md` first.
+   - If `populated` is not `yes`: **stop for that code.** Say: "Jurisdiction `<code>` (<name>) is registered but not populated: no reference files exist for it. I will not apply another jurisdiction's rules or model knowledge in its place. Options: (1) populate `references/jurisdictions/<code>/` (see README, 'How to add a jurisdiction'), (2) route this matter to local counsel, (3) tell me to proceed with the analysis limited to the populated jurisdictions in this matter, with every finding for `<code>` marked `[not populated — no rule applied]`." Wait for the answer. Never fall back silently.
+   - If the code is `usa`: there is no folder. Follow this skill's US path (the upstream doctrine and the upstream research connectors, CourtListener or Westlaw, with the upstream "no silent supplement" rule). Label findings `[usa]`.
+   - If `populated` is `yes`: read `INDEX.md`, then the instrument files this skill names in its "Jurisdiction files" list. A row tagged `[settled — last confirmed YYYY-MM-DD]` may be applied and cited by article. A row tagged `[model knowledge — verify]` may be applied only with that tag carried onto the finding. If a rule this skill needs is not in the files at all, do not supply it from memory: say what is missing, tag the gap `[no rule in <code> files — verify]`, and continue only with the rules that exist.
+4. **Multi-jurisdiction matters.** Run the relevant files side by side. Label every finding with its code in square brackets, `[ksa]`, `[gbr]`, `[usa]`, and never merge two jurisdictions' rules into one sentence. Where the codes conflict (a clause valid under one law and reducible under another), state both and flag `[review]` for the lawyer to decide which governs.
+5. **Research step (when a rule must be quoted or its currency checked).** Use the portal named in `MANIFEST.md` → `research_tool`. For `ksa`: `python3 scripts/fetch-law.py --portal boe --id <guid> --lang ar` (GUIDs in `SOURCES.md`), or `curl -sS https://laws.boe.gov.sa/BoeLaws/Laws/LawDetails/<guid>/1`; the built-in web-fetch tool rejects the portal's TLS chain. Quote the article, tag `[BOE — Arabic]` (or `[BOE — official English]` when quoting the translation), and check the status line and the "تعديلات المادة" block for amendments. If the fetch fails or the article is not found, apply the "no silent supplement" rule: report the failure and stop, or continue with the rule tagged `[model knowledge — verify]` only if the user says so.
+6. **Calendar and language.** Take the weekend, public-holiday, calendar (Hijri or Gregorian) and currency rules from `MANIFEST.md`. Compute every date and roll-back against that calendar, never against a Saturday/Sunday weekend or US federal holidays. Produce the deliverable in English; when the profile's output-language preference is bilingual, or the manifest's authoritative language is not English and counterparty-facing text is produced, add the authoritative-language rendering of the bottom line, the findings table, and any counterparty-facing text, using the spellings in the manifest's `output_language_rule`.
+7. **Header and disclaimer.** Prepend the manifest's `disclaimer` line under the work-product header for every deliverable that applies a non-`usa` jurisdiction. For `ksa`: "Arabic text is authoritative; English translations are for convenience; a licensed Saudi lawyer must review before reliance." with its Arabic rendering from the manifest.
+8. **Record in the reviewer note.** `Jurisdiction: <codes applied>; files: <list>; portal fetched: yes/no; unpopulated codes: <list or none>.`
+
+**Jurisdiction files this skill loads:**
+
+- `references/jurisdictions/<code>/MANIFEST.md` — calendar for phase dates, currency, disclaimer, research tool (Step 0; Mode 3).
+- `references/jurisdictions/<code>/commercial-register-law.md` and `filing-calendar.md` — post-closing register updates (Mode 1 Step 2.5 and Step 3). For `ksa`: Commercial Register Law Art. 10 (15-day update); the UBO, MISA, GOSI/Qiwa and first-annual-assembly rows of the filing calendar.
+- `references/jurisdictions/<code>/investment-law.md` — foreign-investment register update (Mode 1 Step 2.5). For `ksa`: Reg. Art. 13; Art. 8(3) and Reg. Art. 20.
+- `references/jurisdictions/<code>/ultimate-beneficial-ownership-rules.md` — 15-day UBO update (Mode 1 Step 3 Day 1). For `ksa`: the change-notification row.
+- `references/jurisdictions/<code>/labor-law.md` and `social-insurance-law.md` — workforce transfer and end-of-service accrual (Mode 1 Step 3 Day 1 and Day 90). For `ksa`: Labor Law Art. 18 (contracts continue; award deemed due at the transfer date; joint liability), Arts. 84-87 (award formula), Art. 11; Social Insurance Law Art. 7 (registration), Art. 9 (monthly payment), Art. 10 (certificate).
+- `references/jurisdictions/<code>/platform-obligations.md` — labour-platform transfer mechanics (Mode 1 Step 3 Day 1). For `ksa`: Regulation Art. 14 Second items 19-20 (`[model knowledge — verify]`), Labor Law Arts. 15-16, 51.
+- `references/jurisdictions/<code>/companies-law.md` — entity rationalisation (Mode 1 Step 3 Day 90 and Day 180). For `ksa`: Arts. 225-229 and Regs Art. 87 (merger), Arts. 231-234 and Regs Arts. 89-92 (division), Arts. 220-224 (transformation), Arts. 242-259 and Regs Art. 93 (dissolution), Arts. 28, 260-261 (personal exposure), Art. 112 and Art. 162 (register updates).
+- `references/jurisdictions/<code>/competition-law.md` — pre-closing integration limits and remedy tracking (Mode 1 Step 2.5). For `ksa`: the "first act of implementation" row, the Art. 5 note (clean teams), Arts. 19-20 (remedy breach).
+- `references/jurisdictions/<code>/civil-transactions-law.md` — contract transfer (Mode 2 Step 2; Mode 1 Day 180). For `ksa`: Art. 98, Art. 255, Art. 240, Arts. 252, 258; Art. 97 and Art. 174 for MAC-type events.
+- `references/jurisdictions/<code>/personal-data-protection-law.md` — data migration (Mode 1 Step 3 Day 30). For `ksa`: Art. 29 and the transfer-regulation row (`[model knowledge — verify]`), Art. 5 and Regulation Art. 12 (purpose change).
+- IP recordal: no `ksa` file covers the intellectual-property registry; the item is written as `[no rule in ksa files — verify]` (Mode 1 Step 3 Day 30).
 
 ---
 
@@ -221,12 +254,18 @@ in as more information becomes available.
 - Any earn-out measurement and payment dates — add to pa_dates.earnout_milestones,
   owner always set to "finance"
 
+### Step 2.5: Regulatory map for the deal's jurisdictions
+
+For each populated non-`usa` code among the acquired entities, add the post-closing regulatory items the jurisdiction files name, each with the file, article and tag in `deadline_basis`, and take over any such item `closing-checklist` already holds. Statutory deadlines are counted on the manifest calendar from the closing date. For `ksa`: GAC — after a conditional clearance, track remedy deadlines (`competition-law.md` Arts. 19-20; revocation exposure), and until closing apply the "first act of implementation" row (no exercise of control, no joint commercial decisions, information exchange through clean teams per the Art. 5 note); MISA — register update for the change of owners / UBO (`investment-law.md` Reg. Art. 13) and any Examination Committee condition (Art. 8(3), Reg. Art. 20); MoC — Commercial Register update within 15 days of any change to name, form, capital, managers or address (`commercial-register-law.md` Art. 10), JSC register entry and 15-day update (`companies-law.md` Art. 112), registration of the new manager and any power limits (Art. 162), amended articles registered (Art. 8, Regs Art. 2); UBO update within 15 days of completion for every entity whose UBO changed (`ultimate-beneficial-ownership-rules.md`); ZATCA — post-closing clearance and the first return under the new owner (`filing-calendar.md` ZATCA rows, `[model knowledge — verify]`); first post-closing annual assembly under the new owner (`filing-calendar.md` — FYE + 6 months per `companies-law.md` Art. 88 / Art. 165). A regulator the files do not cover is added as `[no rule in ksa files — verify]`. Where a row must be quoted or its currency checked, fetch the instrument from the portal named in the manifest (`python3 scripts/fetch-law.py --portal boe --id <guid> --lang ar`, GUIDs in `references/jurisdictions/<code>/SOURCES.md`; the built-in web-fetch tool rejects the portal's TLS chain, use the script or `curl`), quote the article, tag `[BOE — Arabic]` or `[BOE — official English]`; if the fetch fails, report and stop, or continue on the file's row with its tag only if the user says so. An unpopulated code is a hard stop for its items (Step 0, item 3).
+
 ### Step 3: Build the phased workplan
 
 Generate standard workplan items for each phase. Add PA obligations extracted
-in Step 2. Items inherited from the closing checklist are pre-populated.
+in Step 2 and the regulatory items from Step 2.5. Items inherited from the closing checklist are pre-populated. Phase target dates (`close_date + N days`) are counted on the calendar in the manifest of the acquired entity's code and rolled back from its weekend and public holidays. Each phase below has the `usa` list and, beside it, the jurisdiction-file variant for a populated non-`usa` code (shown for `ksa`); generate the list that matches each acquired entity's code, never both for one entity.
 
 **Day 1 — legal-owns:**
+
+*When the applicable code is `usa`:*
 - Entity name change filing (if acquired entity is being renamed) [priority: critical]
 - Bank account signatory updates — notify bank with closing documentation [priority: critical]
 - Registered agent notification of ownership change [priority: high]
@@ -235,37 +274,52 @@ in Step 2. Items inherited from the closing checklist are pre-populated.
 - D&O insurance — confirm tail policy is bound for acquired entity directors [priority: critical]
 - Secretary of State ownership notifications where required by state law [priority: high]
 
+*When the applicable code is a populated non-`usa` code (for `ksa`):*
+- Commercial Register update — new owners, managers and their powers, name, capital, address — within 15 days of the change (`commercial-register-law.md` Art. 10; `companies-law.md` Art. 112 for a JSC register, Art. 162 for the LLC manager) [priority: critical, deadline: close_date + 15 days on the manifest calendar]
+- MISA register update for the change of owners / UBO (`investment-law.md` Reg. Art. 13, `[authority — MISA]`) [priority: critical]
+- UBO update with the Ministry of Commerce within 15 days of completion for every entity whose UBO changed (`ultimate-beneficial-ownership-rules.md`, change-notification row) [priority: critical, deadline: close_date + 15 days]
+- Bank account signatory updates — the entity's own accounts must be used (`anti-concealment-law.md` Arts. 4(c), 17) [priority: critical]
+- Filing agent / government-relations officer notification and Qiwa authorised-manager update (`platform-obligations.md` Labor Law Arts. 15-16) [priority: high]
+- GOSI transfer — register the acquired workforce under the receiving establishment where the structure moves employees, keep registration where it does not (`social-insurance-law.md` Art. 7; `platform-obligations.md` Regulation Art. 14 Second items 19-20 — name amendment versus worker-by-worker transfer, `[model knowledge — verify]`) [priority: critical]
+- End-of-service accrual — record the award deemed due at the transfer date for each transferred employee and the joint liability of predecessor and successor (`labor-law.md` Art. 18); compute per employee with the Art. 84 formula 0.5 × W × min(S, 5) + W × max(S − 5, 0), show W and S, tag `[computed — labor-law.md Arts. 84-85, settled 2026-09-04; inputs: …]` [priority: critical]
+- Key IP assignment execution — if any IP assignments were deferred from closing [priority: critical]
+- Domain name and social media account transfer [priority: high]
+- D&O insurance — confirm tail policy is bound for acquired entity directors [priority: critical]
+
 **Day 1 — legal-supports:**
 - Employee announcement and communications (HR owns, legal reviews) [priority: critical]
-- Benefits day-1 coverage confirmation (HR owns, legal advises on COBRA and plan terms)
-- Customer communication letters (business owns, legal reviews for accuracy)
+- Benefits day-1 coverage confirmation — under `usa`: HR owns, legal advises on COBRA and plan terms; for `ksa`: HR owns, legal advises on contract continuity and continuous service under `labor-law.md` Art. 18 and GOSI continuity under `social-insurance-law.md` Arts. 7, 9
+- Customer communication letters (business owns, legal reviews for accuracy; counterparty-facing text in the authoritative language when the profile asks)
 
 **Day 30 — legal-owns:**
 - Required Consents initial push — contact all counterparties, document outreach [priority: critical]
-- IP assignment recordal at USPTO (patents, trademarks) [priority: high]
-- Copyright assignment filing [priority: medium]
-- Trademark assignment recording [priority: high]
+- IP assignment recordal — under `usa`: at USPTO (patents, trademarks) [priority: high]; for `ksa`: recordal with the intellectual-property authority — `[no rule in ksa files — verify]`: no jurisdiction file covers the IP registry, so the item is listed with no deadline until counsel supplies the rule [priority: high]
+- Copyright assignment filing — under `usa` [priority: medium]; for `ksa`: `[no rule in ksa files — verify]`
+- Trademark assignment recording — under `usa` [priority: high]; for `ksa`: `[no rule in ksa files — verify]`
 - Material contract review — complete tier 1 and tier 2 contract assignment analysis [priority: high]
 - Insurance tail policy final confirmation [priority: high]
+- For `ksa`: Commercial Agencies Register update for change of control / signatories where the target is a registered agent (`commercial-agencies-law.md` Art. 1, Art. 3; platform mechanics `[model knowledge — verify]`) [priority: high]
+- For `ksa`: GTPL Art. 70 consents and Etimad classification transfer for government contracts (`government-tenders-procurement-law.md`) [priority: high]
 
 **Day 30 — legal-supports:**
-- Data migration privacy review (IT owns, legal advises on data transfer mechanisms)
-- Real estate lease review for assignment provisions (facilities owns, legal advises)
+- Data migration privacy review (IT owns, legal advises on data transfer mechanisms — for `ksa`: `personal-data-protection-law.md` Art. 29 and the transfer-regulation row `[model knowledge — verify]` when Saudi personal data moves to a foreign group system; Art. 5 and Regulation Art. 12 if the purpose of processing changes)
+- Real estate lease review for assignment provisions (facilities owns, legal advises — for `ksa`: `civil-transactions-law.md` Art. 255 default)
 
 **Day 90 — legal-owns:**
 - Required Consents deadline — all Required Consents must be obtained or escalated [priority: critical, deadline: pa_dates.required_consents_deadline]
 - Entity rationalization decision — recommend keep separate / merge / dissolve [priority: high]
-- Benefits plan assumption or termination documentation [priority: high]
+- Benefits plan assumption or termination documentation — under `usa` [priority: high]; for `ksa`: harmonisation of work regulations (HRSD model, certification per `labor-law-implementing-regulations.md`) and end-of-service settlement or carry-over documentation (`labor-law.md` Arts. 18, 84-87) [priority: high]
 - Secondary consent push — remaining outstanding consents [priority: high]
 - Tier 3 change of control contract resolution [priority: critical]
+- For `ksa`: first post-closing annual assembly under the new owner scheduled (FYE + 6 months, `companies-law.md` Art. 88 / Art. 165, per `filing-calendar.md`) [priority: high]
 
 **Day 90 — legal-supports:**
-- Full HR harmonization documentation (HR owns, legal advises on employment law)
+- Full HR harmonization documentation (HR owns, legal advises on employment law — for `ksa`, the `labor-law.md` floors under Art. 8 and the Nitaqat band of the receiving entity per `saudization-nitaqat.md`)
 
 **Day 180 — legal-owns:**
-- Entity merger filing — if rationalization decision is to merge [priority: high]
-- Entity dissolution filing — if rationalization decision is to wind down [priority: high]
-- Full contract novation — contracts requiring acquiror's name [priority: high]
+- Entity merger filing — if rationalization decision is to merge; under `usa` per state law [priority: high]; for `ksa`: `companies-law.md` Arts. 225-229 and Regs Art. 87 — proposal approved at the articles-amendment quorum, valuation, 30-day announcement before the vote, 15-day creditor objection from the announcement, court application at least 10 days before the vote, effective on Commercial Register registration, universal succession, simplified intra-group route; competition, CMA and MISA gates are `[model knowledge — verify]` in the merger row and are raised separately [priority: high]
+- Entity dissolution filing — if rationalization decision is to wind down; for `ksa`: `companies-law.md` Arts. 242-259 and Regs Art. 93 — solvency statement put to the owners within 30 days, liquidator appointed within 60 days, three-year cap, short-form route for never-traded companies; a division under Arts. 231-234 carries joint liability to pre-division creditors [priority: high]
+- Full contract novation — contracts requiring acquiror's name; for `ksa`: counterparty consents under `civil-transactions-law.md` Art. 255, notices to account debtors under Art. 240, guarantor re-confirmations under Arts. 252, 258 [priority: high]
 - Rep survival tracking — note upcoming expiry date [priority: medium]
 
 Show summary after generating:
@@ -347,7 +401,7 @@ For each contract, classify the assignment mechanism:
 | `consent-required` | Explicit clause prohibiting assignment without counterparty consent | 1 or 2 |
 | `coc-provision` | Change of control clause giving counterparty termination or consent right triggered by the deal | 3 |
 | `auto-assign` | No restriction, or explicit permission to assign to affiliates or successors | 4 |
-| `silent` | No assignment clause — default to governing law. Research the governing-law default for contract assignment when the contract is silent and cite the controlling rule. Flag for attorney review. | 2 |
+| `silent` | No assignment clause — default to governing law. Research the governing-law default for contract assignment when the contract is silent and cite the controlling rule (for a populated non-`usa` code, the jurisdiction file's row — for `ksa`: `civil-transactions-law.md` Art. 255, consent required; Art. 98, no transfer on a share sale; tagged with the row's tag). Flag for attorney review. | 2 |
 | `not_reviewed` | Could not read or locate assignment clause | Flag for manual review |
 
 For contracts flagged in the Required Consents PA schedule: override tier to 1
@@ -394,15 +448,17 @@ For each contract, create a tracker entry with:
 /corporate-legal:integration-management --report [--deal [code]]
 ```
 
-Reads current tracker state. Produces:
+Reads current tracker state. Prepend the work-product header, then, for a non-`usa` code, the jurisdiction disclaimer line from the profile `## Jurisdiction` / the manifest, and apply the bilingual house-style rule from the plugin `CLAUDE.md` `## Outputs`: when the profile's output language is bilingual, render the executive summary (the bottom line) and the consents and workplan tables (the findings tables) in the authoritative language as well as English, using the manifest's spellings; consent-request text sent to a counterparty is rendered in the authoritative language when the profile asks. Amounts in the profile currency; "Day [N]" counted on the manifest calendar. Produces:
 
 ```
 [WORK-PRODUCT HEADER — per plugin config ## Outputs — differs by role; see `## Who's using this`]
+[JURISDICTION DISCLAIMER LINE — from the profile ## Jurisdiction, for a non-usa code]
 
 > This status report is derived from the purchase agreement, diligence findings, and post-closing integration records. It inherits their privilege and confidentiality status — distribution beyond the privilege circle can waive privilege. Confirm the recipient list before sending.
 
 INTEGRATION STATUS — [Deal code] / [Target]
 [Date] — Day [N] post-close
+Jurisdiction: [codes applied]; files: [list]; portal fetched: yes/no; unpopulated codes: [list or none]
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -512,7 +568,7 @@ Produces a flat CSV or markdown table. Default: all sections, CSV.
 CSV format — one row per item, section indicated by a `section` column.
 Columns vary by section:
 
-*Workplan:* id, phase, description, owner, workstream, priority, deadline, status, blocker
+*Workplan:* id, phase, description, owner, workstream, priority, deadline, deadline_basis, jurisdiction_code, status, blocker
 
 *Consents:* id, counterparty, contract_type, required_consent, pa_deadline, status, assigned_to, obtained_date, notes
 

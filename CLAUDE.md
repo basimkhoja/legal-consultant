@@ -198,6 +198,15 @@ the legacy path: a populated profile found there is copied forward once,
 following upstream's own migration rule. Phase 4 replaces every hard-coded
 path with this scheme.
 
+
+### Fork scripts
+
+- `scripts/fetch-law.py` — fetch an instrument from an official portal (`boe` adapter); renders amendment blocks, warns on repealed laws.
+- `scripts/build-jurisdiction-index.py <code>` — regenerate `INDEX.md`; refuses untagged rule rows; `--check` in CI.
+- `scripts/sync-jurisdictions.py` — copy `references/jurisdictions/` into the in-scope plugins; `--check` in CI.
+- `scripts/build-runtimes.py` — generate `.agents/`, `AGENTS.md`, `gemini-extension/`; `--check` in CI.
+- Validation order before a commit is in `CONTRIBUTING-LEGAL-CONSULTANT.md`.
+
 ### Git authorship
 
 Commits are authored as Basim Khoja <basim.khoja@gmail.com>.

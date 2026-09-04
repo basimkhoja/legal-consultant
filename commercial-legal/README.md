@@ -63,7 +63,7 @@ The commands above run when you invoke them — for when you're working a matter
 
 ## Integrations
 
-**Connect a research tool first — the citation guardrails depend on it.** Without one, every cite is tagged `[verify]` and the reviewer note above each deliverable records that sources weren't verified. Skills work either way; a research tool (CourtListener) just shifts verification work off your plate.
+**Make the primary-source route work first — the citation guardrails depend on it.** For a practice whose primary jurisdiction has a reference folder under `references/jurisdictions/<code>/`, the research source is the official portal named in that folder's `MANIFEST.md` (for `ksa`, laws.boe.gov.sa via `scripts/fetch-law.py`); for a `usa` practice it is a research connector (CourtListener, Westlaw). Without a reachable source, every cite is tagged `[verify]` and the reviewer note above each deliverable records that sources weren't verified. Skills work either way; a reachable source just shifts verification work off your plate.
 
 
 Ships with connectors configured in `.mcp.json`:

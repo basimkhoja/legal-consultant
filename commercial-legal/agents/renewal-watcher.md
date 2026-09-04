@@ -33,10 +33,10 @@ Weekly, Monday morning. Configurable — if the contracts volume is high, daily 
 📅 **Renewals — week of [date]**
 
 🔴 **Cancel-by in 0–13 days**
-• [Counterparty] — cancel by **[date]** ([annual $]) — owner: [business owner]
+• [Counterparty] — cancel by **[date]** ([currency] [annual value]) — owner: [business owner]
 
 🟠 **Cancel-by in 14–44 days**
-• [Counterparty] — cancel by [date] ([annual $])
+• [Counterparty] — cancel by [date] ([currency] [annual value])
 • ...
 
 🟡 **Cancel-by in 45–89 days**
@@ -44,6 +44,8 @@ Weekly, Monday morning. Configurable — if the contracts volume is high, daily 
 
 **Flagged:** [any with uncapped renewal pricing or notes worth raising]
 ```
+
+`[currency]` is the code recorded in the practice profile `## Jurisdiction` → Currency for thresholds (for `ksa`: SAR); the agent never writes a currency symbol the profile does not carry. Cancel-by dates are the `cancel_by_effective` values the renewal-tracker skill computed against the calendar in the jurisdiction manifest; the agent does not recompute them.
 
 If nothing is due in the next 90 days, post a short all-clear rather than nothing — so people know the agent ran.
 

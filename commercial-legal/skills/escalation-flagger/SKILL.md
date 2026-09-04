@@ -15,9 +15,34 @@ Names the approver for a contract issue per the `~/.claude/plugins/config/claude
 
 ## Instructions
 
+### Step 0: Resolve the applicable jurisdiction
+
+1. **Read the practice profile's `## Jurisdiction` section.** It gives the primary jurisdiction code, the footprint list (other codes the practice operates in), the output-language preference, and whether local counsel is available for escalation. Codes are ISO 3166-1 alpha-3 lowercase (`ksa`, `gbr`, `fra`, `che`, `usa`). If the section is missing or still a placeholder, stop: "The practice profile has no jurisdiction. Run the cold-start interview; nothing in this skill can run against the wrong jurisdiction."
+2. **Determine the matter's jurisdiction(s).** Start from the primary code. Then read the matter facts: governing-law clause, seat of arbitration, place of employment, jurisdiction of incorporation, place of performance. If the facts point to a code not in the profile, add it for this matter and say so in the reviewer note. A matter may have more than one code (a contract governed by English law with a Saudi counterparty and Saudi performance is `gbr` + `ksa`).
+3. **Load the jurisdiction folder for each code.** The folder is `references/jurisdictions/<code>/` in this plugin (the same tree ships at the repo root and in every runtime adapter). Read `MANIFEST.md` first.
+   - If `populated` is not `yes`: **stop for that code.** Say: "Jurisdiction `<code>` (<name>) is registered but not populated: no reference files exist for it. I will not apply another jurisdiction's rules or model knowledge in its place. Options: (1) populate `references/jurisdictions/<code>/` (see README, 'How to add a jurisdiction'), (2) route this matter to local counsel, (3) tell me to proceed with the analysis limited to the populated jurisdictions in this matter, with every finding for `<code>` marked `[not populated — no rule applied]`." Wait for the answer. Never fall back silently.
+   - If the code is `usa`: there is no folder. Follow this skill's US path (the upstream doctrine and the upstream research connectors, CourtListener or Westlaw, with the upstream "no silent supplement" rule). Label findings `[usa]`.
+   - If `populated` is `yes`: read `INDEX.md`, then the instrument files this skill names in its "Jurisdiction files" list. A row tagged `[settled — last confirmed YYYY-MM-DD]` may be applied and cited by article. A row tagged `[model knowledge — verify]` may be applied only with that tag carried onto the finding. If a rule this skill needs is not in the files at all, do not supply it from memory: say what is missing, tag the gap `[no rule in <code> files — verify]`, and continue only with the rules that exist.
+4. **Multi-jurisdiction matters.** Run the relevant files side by side. Label every finding with its code in square brackets, `[ksa]`, `[gbr]`, `[usa]`, and never merge two jurisdictions' rules into one sentence. Where the codes conflict (a clause valid under one law and reducible under another), state both and flag `[review]` for the lawyer to decide which governs.
+5. **Research step (when a rule must be quoted or its currency checked).** Use the portal named in `MANIFEST.md` → `research_tool`. For `ksa`: `python3 scripts/fetch-law.py --portal boe --id <guid> --lang ar` (GUIDs in `SOURCES.md`), or `curl -sS https://laws.boe.gov.sa/BoeLaws/Laws/LawDetails/<guid>/1`; the built-in web-fetch tool rejects the portal's TLS chain. Quote the article, tag `[BOE — Arabic]` (or `[BOE — official English]` when quoting the translation), and check the status line and the "تعديلات المادة" block for amendments. If the fetch fails or the article is not found, apply the "no silent supplement" rule: report the failure and stop, or continue with the rule tagged `[model knowledge — verify]` only if the user says so.
+6. **Calendar and language.** Take the weekend, public-holiday, calendar (Hijri or Gregorian) and currency rules from `MANIFEST.md`. Compute every date and roll-back against that calendar, never against a Saturday/Sunday weekend or US federal holidays. Produce the deliverable in English; when the profile's output-language preference is bilingual, or the manifest's authoritative language is not English and counterparty-facing text is produced, add the authoritative-language rendering of the bottom line, the findings table, and any counterparty-facing text, using the spellings in the manifest's `output_language_rule`.
+7. **Header and disclaimer.** Prepend the manifest's `disclaimer` line under the work-product header for every deliverable that applies a non-`usa` jurisdiction. For `ksa`: "Arabic text is authoritative; English translations are for convenience; a licensed Saudi lawyer must review before reliance." with its Arabic rendering from the manifest.
+8. **Record in the reviewer note.** `Jurisdiction: <codes applied>; files: <list>; portal fetched: yes/no; unpopulated codes: <list or none>.`
+
+**Jurisdiction files this skill loads** (for each populated non-`usa` code resolved in Step 0; article numbers are the `ksa` rows that exist today):
+
+- `MANIFEST.md` — `currency` (value thresholds are read in the profile currency) and `disclaimer`.
+- `civil-transactions-law.md` — the mandatory rows a business cannot negotiate around, labelled non-negotiable in the ask: Art. 96 (adhesion terms), Art. 97 (hardship), Art. 173 carve-out (fraud/gross fault, tort), Art. 179 (agreed-compensation reduction), Arts. 305-306 (limitation cannot be shortened); Arts. 178 and 385 for any interest or late-payment charge.
+- `personal-data-protection-law.md` — Art. 36 (administrative fine ceiling, doubled on repeat) and Art. 35 (criminal exposure for sensitive-data disclosure) when quantifying risk.
+- `government-tenders-procurement-law.md` — Art. 72 (delay penalties above the cap), Art. 92 (foreign-seated arbitration with a government entity), Arts. 70-71 (assignment or subcontract without consent), Arts. 13(1)(d) and 88 (ban list).
+- `commercial-agencies-law.md` — Anti-Concealment row and Added Art. 2 (foreign principal controlling a local agent; missing spare-parts allocation).
+- `arbitration-law.md` — Law Arts. 10(2), 14, 40, 51 when a live arbitration or a government counterparty is involved.
+- `commercial-courts-law.md` — Arts. 16, 33-37, 65, 67-71, 78-79 when a local commercial claim exists or is threatened.
+- `enforcement-law.md` — Arts. 18-19, 24, 41, 50-52 whenever a party is a judgment debtor or is asked to move assets, with the effective-date gate stated in that file.
+
 1. **Load `~/.claude/plugins/config/claude-for-legal/commercial-legal/CLAUDE.md`** → Escalation section. If missing, say so — the practice profile needs editing.
 
-2. **Characterize the issue:** dollar threshold / term deviation / automatic trigger / business decision.
+2. **Characterize the issue:** value threshold (in the profile currency) / term deviation / automatic trigger / jurisdiction trigger from the files loaded in Step 0 / business decision.
 
 3. **Match to matrix, name the approver.** Be specific — a person or role, not "legal leadership."
 
@@ -60,11 +85,13 @@ Expected structure:
 
 | Can approve | Threshold | Escalates to | Via |
 |---|---|---|---|
-| Paralegal | Standard terms, <$50K | Counsel | Slack |
-| Counsel | Non-standard but within fallbacks, <$500K | GC | Slack or email |
+| Paralegal | Standard terms, <[currency] 50K | Counsel | Slack |
+| Counsel | Non-standard but within fallbacks, <[currency] 500K | GC | Slack or email |
 | GC | Everything else | CFO/Board | Meeting |
 
-Plus **automatic escalation triggers** — things that escalate regardless of dollar value. Typically: unlimited liability, IP assignment, anything on the "never accept" lists.
+`[currency]` is the code in the profile `## Jurisdiction` → Currency for thresholds (for `ksa`: SAR); the matrix's value thresholds are read in that currency, and a contract priced in another currency is converted for routing with the conversion shown.
+
+Plus **automatic escalation triggers** — things that escalate regardless of contract value. Typically: unlimited liability, IP assignment, anything on the "never accept" lists. For a populated non-`usa` code, add the triggers the jurisdiction files name for this skill, citing the row: for `ksa`, a government contract with delay penalties above the `government-tenders-procurement-law.md` Art. 72 caps, a foreign-seated arbitration clause with a government entity (Art. 92), an assignment or subcontract without written consent (Arts. 70-71), a counterparty on the ban list (Arts. 13(1)(d), 88); a clause that conflicts with a mandatory rule in `civil-transactions-law.md` (Arts. 96, 97, 173 carve-out, 179, 305-306) or any interest or late-payment percentage (Arts. 178, 385); a structure where a foreign principal controls a local agent or a distributorship with no spare-parts allocation (`commercial-agencies-law.md`); a live arbitration or a government counterparty (`arbitration-law.md` Arts. 10(2), 14, 40, 51); an existing or threatened local commercial claim (`commercial-courts-law.md` Arts. 16, 33-37, 65, 67-71, 78-79); a party that is a judgment debtor or is asked to move assets (`enforcement-law.md` Arts. 18-19, 24, 41, 50-52, with that file's effective-date gate). If the file is silent on a trigger the user expects, say `[no rule in <code> files — verify]` rather than invent one.
 
 ## Workflow
 
@@ -72,9 +99,10 @@ Plus **automatic escalation triggers** — things that escalate regardless of do
 
 What's being escalated?
 
-- **Dollar threshold:** Contract value exceeds someone's approval authority
+- **Value threshold:** Contract value (in the profile currency) exceeds someone's approval authority
 - **Term deviation:** A term is outside the playbook fallbacks — someone more senior needs to decide whether to accept
 - **Automatic trigger:** One of the always-escalate items is present
+- **Jurisdiction trigger:** A mandatory rule or a regulatory step in the jurisdiction files (listed under "Load the matrix") is engaged — these are labelled "non-negotiable: statute" in the ask, with the file and article, because no approver can waive them
 - **Business decision:** Not a legal call — needs the business owner, not legal leadership
 
 Don't escalate things that are actually fine. If the term is within the fallbacks in `~/.claude/plugins/config/claude-for-legal/commercial-legal/CLAUDE.md`, it doesn't need to go up.
@@ -86,8 +114,8 @@ Is the issue an automatic trigger?
   → YES: escalate to [person named for that trigger]
   → NO: continue
 
-Is the contract value above the reviewer's threshold?
-  → YES: escalate to whoever has authority at that dollar level
+Is the contract value (in the profile currency) above the reviewer's threshold?
+  → YES: escalate to whoever has authority at that value level
   → NO: continue
 
 Is the term deviation outside all documented fallbacks?
@@ -103,10 +131,16 @@ Be specific. Not "escalate to legal leadership" — name the person or role from
 
 The approver should be able to decide from the message alone — no "let me pull up the contract."
 
+Prepend the work-product header from the profile `## Outputs` and, directly under it, for every code applied other than `usa`, the jurisdiction disclaimer line from the profile `## Jurisdiction`. Apply the bilingual house-style rule from the profile `## Outputs`: when the output language is bilingual, add the authoritative-language rendering of the bottom line (the issue in one sentence and the recommendation) and of the options list; any proposed counter-language for a counterparty in a jurisdiction whose authoritative language is not English is given in both languages, using the spellings in the manifest's `output_language_rule`. Amounts are written in `[currency]`; an exposure number computed from a jurisdiction file carries its `[computed — <file> <articles>, settled <date>; inputs: …]` tag. Where the option "Accept" would mean accepting a clause the jurisdiction file marks void or reducible (for `ksa`: `civil-transactions-law.md` Arts. 96, 97, 173, 179, 305), the option says so with the article, because the approver is being asked to accept a term that will not do what it says.
+
 ```markdown
+[WORK-PRODUCT HEADER — per plugin config ## Outputs]
+[JURISDICTION DISCLAIMER LINE — from the profile ## Jurisdiction, for every code other than `usa`]
+
 **Escalating to:** [name]
 **Via:** [Slack #channel / email / meeting — per `~/.claude/plugins/config/claude-for-legal/commercial-legal/CLAUDE.md`]
-**Urgency:** [deadline if there is one]
+**Urgency:** [deadline if there is one — computed against the calendar in the manifest, never a Saturday/Sunday weekend assumption]
+**Jurisdiction:** [codes applied; files cited]
 
 ---
 
@@ -142,7 +176,7 @@ If this team uses a ticket system or [CLM] approval workflows, log it. If not, n
 
 The cost of an unnecessary escalation is ~30 seconds of the approver's time — they read, say "fine, proceed," and the record shows they saw it. The cost of a missed escalation is signing an unapproved term, which is a one-way door. The costs are not symmetric. **When in doubt, escalate.**
 
-The calibration for what warrants escalation lives in `~/.claude/plugins/config/claude-for-legal/commercial-legal/CLAUDE.md`, not in this skill. Check the playbook's stated position, its fallbacks, and its "automatic escalation regardless of dollar value" list:
+The calibration for what warrants escalation lives in `~/.claude/plugins/config/claude-for-legal/commercial-legal/CLAUDE.md`, not in this skill. Check the playbook's stated position, its fallbacks, and its "automatic escalations regardless of contract value" list:
 
 - **Clearly inside the fallback range:** no escalation needed.
 - **Clearly outside the range, or on the automatic-escalation list:** escalate.

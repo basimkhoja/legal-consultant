@@ -97,10 +97,31 @@ If the user explicitly asks to re-run setup ("let's redo the interview", "my pla
 
 Look for `~/.claude/plugins/config/claude-for-legal/company-profile.md`.
 
-- **If it exists:** Read it. Show a one-line confirmation: "You're [name], [practice setting], at [company], [industry], operating in [jurisdictions]. Right? (Or say 'update' to change the shared profile.)" If confirmed, skip the company questions — go straight to the plugin-specific ones.
-- **If it doesn't exist:** You'll be the first plugin this user set up. After the orientation and fork, ask the company questions and write them to the shared profile (per the template at `references/company-profile-template.md` in the plugin root), then continue with the plugin-specific questions. Tell the user: "I've saved your company profile — the other legal plugins will read it and skip these questions."
+- **If it exists:** Read it. Show a one-line confirmation: "You're [name], [practice setting], at [company], [industry], operating in [jurisdictions]; primary jurisdiction [code] — I'll load the `references/jurisdictions/[code]/` rules for it. Right? (Or say 'update' to change the shared profile.)" If confirmed, skip the company questions — go straight to the jurisdiction selection below, then the plugin-specific ones.
+- **If it doesn't exist:** You'll be the first plugin this user set up. After the orientation and fork, ask the company questions and write them to the shared profile (per the template at `references/company-profile-template.md` in the plugin root), then continue with the plugin-specific questions. Tell the user: "I've saved your company profile — the other legal plugins will read it and skip these questions." The shared profile's "jurisdictions we operate in" line records codes, not free text, and names the primary code; the regulator list is drawn from the primary code's manifest `issuing_authorities` row (for `ksa`: Ministry of Commerce, MISA, ZATCA, CMA, GOSI, SDAIA, HRSD, GAC, SCCA) rather than a generic example list.
 
-The company questions that belong in the shared profile (and should NOT be re-asked if it exists): practice setting, company name, industry, what-you-sell, size, jurisdictions, regulators, risk appetite, escalation names. The plugin-specific questions (playbook positions, review framework, house style, supervision model, etc.) stay per-plugin.
+The company questions that belong in the shared profile (and should NOT be re-asked if it exists): practice setting, company name, industry, what-you-sell, size, jurisdictions (as codes, with the primary code named), regulators, risk appetite, escalation names. The plugin-specific questions (playbook positions, review framework, house style, supervision model, etc.) stay per-plugin.
+
+### Jurisdiction selection — immediately after the shared-profile confirmation
+
+This is asked before any playbook question, in both the quick and the full path, because every default that follows comes from the primary code's `playbook-defaults.md`.
+
+> Which jurisdiction's law do your contracts mostly live under? Give me the primary jurisdiction as a code — `ksa`, `gbr`, `fra`, `che`, `usa` — and any others your practice operates in (the footprint). I'll load the reference files for each. (This feeds Step 0 of every skill: the enforceability rules, the calendar for deadlines, the currency for thresholds, the research portal, and the disclaimer on every output.)
+
+Then, for the primary code and each footprint code, read `references/jurisdictions/REGISTRY.md` and `references/jurisdictions/<code>/MANIFEST.md`:
+
+- **Primary code populated (`populated: yes`)**: read the manifest and echo back what the profile will carry: "Primary `<code>` (<name>): authoritative language <language>; calendar <weekend, holidays, Hijri/Gregorian>; currency <code>; portal <url>; research tool <command>. I'll offer you that jurisdiction's playbook defaults row by row in Part 2." Record every one of those values in the `## Jurisdiction` section when writing the profile.
+- **Primary code `usa`**: there is no folder. Say: "`usa` uses the upstream US path — the research connectors (CourtListener, Westlaw), a Saturday/Sunday weekend with federal holidays, USD, and no jurisdiction disclaimer. No playbook-defaults file exists for it, so Part 2 asks each position without a pre-filled default." Record `usa` and continue.
+- **Primary code not populated (`populated: no`, or no folder)**: **refuse to write a profile with that primary code.** Say, verbatim in substance: "Jurisdiction `<code>` (<name>) is registered but not populated: no reference files exist for it, and I will not write a profile whose skills would then apply another jurisdiction's rules or model knowledge in its place. Options: (1) pick a populated primary code — today that is `ksa` — or `usa` for the upstream US path; (2) populate `references/jurisdictions/<code>/` first (see the README, 'How to add a jurisdiction') and run this interview again; (3) pause the interview." Wait. Do not proceed to Part 2 until the primary code is populated or `usa`.
+- **Footprint code not populated**: allowed in the footprint, but say so: "`<code>` is in your footprint and is not populated; every skill will stop for that code on a matter that engages it and mark its findings `[not populated — no rule applied]`. Keep it in the footprint?" Record the answer.
+
+Then two follow-ups, one turn each:
+
+> **Output language.** Your primary jurisdiction's authoritative language is [language from the manifest]. Do you want outputs in (a) English only, (b) English plus the [language] rendering of the bottom line, the findings table and any counterparty-facing text (bilingual — the manifest's default rule), or (c) [language] only? (This feeds the bilingual house-style rule in `## Outputs`.)
+
+> **Local counsel.** Is a lawyer licensed in [jurisdiction name] available to you for escalation — in-house, a firm, or nobody yet? Name or firm. (The disclaimer on every output says a licensed local lawyer must review before reliance; this is who that is. If nobody, the escalation matrix's top rung becomes "route to local counsel — not yet identified".)
+
+Record both in `## Jurisdiction`. The header and disclaimer written into `## Outputs` follow from the primary code (see "Writing the practice profile").
 
 ## Install scope check
 
@@ -116,7 +137,7 @@ Before asking anything else, show the fork-first preamble — 3-4 short lines, n
 
 > **`commercial-legal` is for people who review, negotiate, and manage commercial contracts (vendor agreements, SaaS MSAs, NDAs, renewals).** Not your area? `/legal-builder-hub:related-skills-surfacer`.
 >
-> **2 minutes** gets you your role, practice setting, jurisdiction, and playbook side (sales or purchasing), plus working defaults for playbook positions, escalation thresholds, LoL cap, indemnity direction, and house style. **15 minutes** adds your real playbook positions (LoL, indemnity, DPA, term, governing law) calibrated to your side, your one-thing deal-breaker, full escalation matrix with dollar thresholds and automatic escalations, house style and renewal-alerts destination, and the positions extracted from your signed agreements.
+> **2 minutes** gets you your role, practice setting, primary jurisdiction (and the reference files that come with it), output language, and playbook side (sales or purchasing), plus working defaults for playbook positions, escalation thresholds, LoL cap, indemnity direction, and house style, drawn from your jurisdiction's playbook-defaults file where one exists. **15 minutes** adds your real playbook positions (LoL, indemnity, DPA, term, governing law and forum) calibrated to your side, your one-thing deal-breaker, full escalation matrix with value thresholds in your currency and automatic escalations, house style and renewal-alerts destination, and the positions extracted from your signed agreements.
 >
 > Quick or full? (Upgrade any time with `/commercial-legal:cold-start-interview --full`.)
 
@@ -139,13 +160,13 @@ Once the user has chosen, orient them before the first interview question:
 
 Corollary: the interview's inputs are the user's typed answers and documents they explicitly share. Do not pull from ambient context, prior sessions, or user memory to fill in gaps.
 
-**Quick start path:** ask only Part 0 (role, practice setting, integrations) and the playbook side. Write the config with `[DEFAULT]` markers on everything else. Close with: "Done. You can start using the commands now. I've used sensible defaults for playbook positions, escalation thresholds, and house style. When a skill's output feels off, that's usually a default you should tune — it'll tell you which. Run `/commercial-legal:cold-start-interview --full` anytime to do the whole interview, or `/commercial-legal:cold-start-interview --redo <section>` to re-do one part."
+**Quick start path:** ask only the jurisdiction selection (primary code, footprint, output language, local counsel), Part 0 (role, practice setting, integrations) and the playbook side. Write the config with `[DEFAULT — from <code> playbook-defaults, row "<field>"]` markers on everything the primary code's `references/jurisdictions/<code>/playbook-defaults.md` Commercial table supplies (each marker names the row and carries the row's Basis citation and tag), and `[DEFAULT]` on everything else. For `usa` there is no defaults file, so every default is a plain `[DEFAULT]`. The unpopulated-primary-code refusal applies on the quick path too. Close with: "Done. You can start using the commands now. I've used sensible defaults for playbook positions, escalation thresholds, and house style. When a skill's output feels off, that's usually a default you should tune — it'll tell you which. Run `/commercial-legal:cold-start-interview --full` anytime to do the whole interview, or `/commercial-legal:cold-start-interview --redo <section>` to re-do one part."
 
 **Full setup path:** the existing interview flow below.
 
 ## Interview pacing
 
-**Pause for real answers.** Some questions are quick (pick A/B/C, a dollar number, yes/no). Others need the user to type, describe, or share a document (playbook, escalation matrix, seed agreements). When a question needs more than a quick tap:
+**Pause for real answers.** Some questions are quick (pick A/B/C, a number in your currency, yes/no). Others need the user to type, describe, or share a document (playbook, escalation matrix, seed agreements). When a question needs more than a quick tap:
 
 - **Assume the answer exists somewhere.** When a question asks for information that's probably written down somewhere — company description, playbook, escalation matrix, style guide, handbook, jurisdiction list, matter portfolio — prompt for a link or a paste before asking the user to type it from memory. "Paste a link or a doc, or give me the short version" is the default ask for anything that's more than a sentence. An interviewer who makes people re-type what they've already written has failed the first job of an interviewer.
 - **Batch size — count subparts.** "Never ask more than 2-3 questions in one turn" means 2-3 *answerable prompts*, counting subparts. One question with 5 subparts is 5 questions. The test: can the user answer without scrolling? If the questions don't fit on one screen, it's too many. Prefer structured tap-through questions where possible — they don't require scrolling or typing.
@@ -156,6 +177,24 @@ Corollary: the interview's inputs are the user's typed answers and documents the
 - **Pause and resume.** Tell the user up front: "If you need to stop, say 'pause' (or 'stop', or 'let me come back to this') and I'll save your progress. Run `/commercial-legal:cold-start-interview` again later and I'll pick up where you left off." When the user pauses, write a partial configuration to `~/.claude/plugins/config/claude-for-legal/commercial-legal/CLAUDE.md` with a `<!-- SETUP PAUSED AT: [section name] — run /commercial-legal:cold-start-interview to resume -->` comment at the top and `[PENDING]` markers (distinct from `[PLACEHOLDER]`) on unanswered fields. When setup re-runs and finds a paused config, greet the user: "Welcome back. You paused at [section]. Your earlier answers are saved. Pick up where we left off, or start over?" Do not re-ask questions already answered.
 
 **Verify user-stated legal facts as they come up in setup.** When the user answers an interview question with a specific rule citation, statute number, case name, deadline, threshold, jurisdiction, or registration number — and it's something you can sanity-check — do the check before writing it into the configuration. If what they said conflicts with your understanding or with something they've pasted, surface it: "You said the threshold is X; my understanding is Y — can you confirm which goes in the profile? `[premise flagged — verify]`" A wrong fact written into CLAUDE.md propagates into every future output; catching it here is one of the highest-leverage moments in the product.
+
+### Step 0: Resolve the applicable jurisdiction
+
+1. **Read the practice profile's `## Jurisdiction` section.** It gives the primary jurisdiction code, the footprint list (other codes the practice operates in), the output-language preference, and whether local counsel is available for escalation. Codes are ISO 3166-1 alpha-3 lowercase (`ksa`, `gbr`, `fra`, `che`, `usa`). If the section is missing or still a placeholder, stop: "The practice profile has no jurisdiction. Run the cold-start interview; nothing in this skill can run against the wrong jurisdiction."
+2. **Determine the matter's jurisdiction(s).** Start from the primary code. Then read the matter facts: governing-law clause, seat of arbitration, place of employment, jurisdiction of incorporation, place of performance. If the facts point to a code not in the profile, add it for this matter and say so in the reviewer note. A matter may have more than one code (a contract governed by English law with a Saudi counterparty and Saudi performance is `gbr` + `ksa`).
+3. **Load the jurisdiction folder for each code.** The folder is `references/jurisdictions/<code>/` in this plugin (the same tree ships at the repo root and in every runtime adapter). Read `MANIFEST.md` first.
+   - If `populated` is not `yes`: **stop for that code.** Say: "Jurisdiction `<code>` (<name>) is registered but not populated: no reference files exist for it. I will not apply another jurisdiction's rules or model knowledge in its place. Options: (1) populate `references/jurisdictions/<code>/` (see README, 'How to add a jurisdiction'), (2) route this matter to local counsel, (3) tell me to proceed with the analysis limited to the populated jurisdictions in this matter, with every finding for `<code>` marked `[not populated — no rule applied]`." Wait for the answer. Never fall back silently.
+   - If the code is `usa`: there is no folder. Follow this skill's US path (the upstream doctrine and the upstream research connectors, CourtListener or Westlaw, with the upstream "no silent supplement" rule). Label findings `[usa]`.
+   - If `populated` is `yes`: read `INDEX.md`, then the instrument files this skill names in its "Jurisdiction files" list. A row tagged `[settled — last confirmed YYYY-MM-DD]` may be applied and cited by article. A row tagged `[model knowledge — verify]` may be applied only with that tag carried onto the finding. If a rule this skill needs is not in the files at all, do not supply it from memory: say what is missing, tag the gap `[no rule in <code> files — verify]`, and continue only with the rules that exist.
+4. **Multi-jurisdiction matters.** Run the relevant files side by side. Label every finding with its code in square brackets, `[ksa]`, `[gbr]`, `[usa]`, and never merge two jurisdictions' rules into one sentence. Where the codes conflict (a clause valid under one law and reducible under another), state both and flag `[review]` for the lawyer to decide which governs.
+5. **Research step (when a rule must be quoted or its currency checked).** Use the portal named in `MANIFEST.md` → `research_tool`. For `ksa`: `python3 scripts/fetch-law.py --portal boe --id <guid> --lang ar` (GUIDs in `SOURCES.md`), or `curl -sS https://laws.boe.gov.sa/BoeLaws/Laws/LawDetails/<guid>/1`; the built-in web-fetch tool rejects the portal's TLS chain. Quote the article, tag `[BOE — Arabic]` (or `[BOE — official English]` when quoting the translation), and check the status line and the "تعديلات المادة" block for amendments. If the fetch fails or the article is not found, apply the "no silent supplement" rule: report the failure and stop, or continue with the rule tagged `[model knowledge — verify]` only if the user says so.
+6. **Calendar and language.** Take the weekend, public-holiday, calendar (Hijri or Gregorian) and currency rules from `MANIFEST.md`. Compute every date and roll-back against that calendar, never against a Saturday/Sunday weekend or US federal holidays. Produce the deliverable in English; when the profile's output-language preference is bilingual, or the manifest's authoritative language is not English and counterparty-facing text is produced, add the authoritative-language rendering of the bottom line, the findings table, and any counterparty-facing text, using the spellings in the manifest's `output_language_rule`.
+7. **Header and disclaimer.** Prepend the manifest's `disclaimer` line under the work-product header for every deliverable that applies a non-`usa` jurisdiction. For `ksa`: "Arabic text is authoritative; English translations are for convenience; a licensed Saudi lawyer must review before reliance." with its Arabic rendering from the manifest.
+8. **Record in the reviewer note.** `Jurisdiction: <codes applied>; files: <list>; portal fetched: yes/no; unpopulated codes: <list or none>.`
+
+**Jurisdiction files this skill loads:** `references/jurisdictions/REGISTRY.md` (the list of codes and their populated status), `references/jurisdictions/<code>/MANIFEST.md` for the primary code and each footprint code (populated flag, authoritative language, calendar, currency, source portal, `research_tool`, `disclaimer`, `output_language_rule`), and `references/jurisdictions/<code>/playbook-defaults.md` (the Commercial table) for the primary code. This skill reads no instrument file; it offers the defaults rows as written, with each row's Basis column, and never states a default whose Basis is missing.
+
+*In this skill Step 0 runs against the answers the user gives in the jurisdiction question below, not against an existing profile: item 1's stop means "ask the jurisdiction question first", and item 3's unpopulated stop is the refusal to write a profile whose primary code is unpopulated.*
 
 ## The interview
 
@@ -173,13 +212,16 @@ Two quick questions before we get into commercial-contracts specifics. These sha
 
 #### Who's using this?
 
-> Who'll be using this plugin day to day? (This feeds the work-product header on every /review, /amendment-history, and /renewal-tracker output — lawyer gets "PRIVILEGED & CONFIDENTIAL — ATTORNEY WORK PRODUCT"; non-lawyer gets "RESEARCH NOTES — NOT LEGAL ADVICE" plus research-framed outputs.)
+> Who'll be using this plugin day to day? (This feeds the work-product header on every /review, /amendment-history, and /renewal-tracker output — a lawyer gets the confidentiality/privilege header for your jurisdiction, with a note that "work product" is a US doctrine where it does not apply; a non-lawyer gets "RESEARCH NOTES — NOT LEGAL ADVICE" plus research-framed outputs. For a jurisdiction other than `usa`, the manifest's disclaimer line sits under the header on every output.)
 >
-> 1. **Lawyer or legal professional** — attorney, paralegal, legal ops working under attorney oversight.
-> 2. **Non-lawyer with attorney access** — founder, business lead, contracts manager, HR, procurement; you have an in-house or outside attorney you can consult.
-> 3. **Non-lawyer without regular attorney access** — you're handling this yourself.
+> 1. **Licensed lawyer** — admitted in your primary jurisdiction (advocate / solicitor / avocat / محامٍ مرخص), or a paralegal or legal-ops professional working under one.
+> 2. **Legal consultant or in-house legal professional not admitted locally** — you advise, but a licensed local lawyer signs off; tell me who (this matters where the law distinguishes licensed lawyers from consultants, which the `ksa` files flag as a point for counsel `[model knowledge — verify]`).
+> 3. **Non-lawyer with lawyer access** — founder, business lead, contracts manager, HR, procurement; you have an in-house or outside lawyer you can consult.
+> 4. **Non-lawyer without regular lawyer access** — you're handling this yourself.
 
-If the answer is 2 or 3, say this once (don't repeat it on every output):
+Map 1 to `Lawyer / legal professional`, 2 to `Lawyer / legal professional` with `Attorney contact` set to the licensed lawyer named, and 3-4 to the non-lawyer roles in the profile.
+
+If the answer is 3 or 4, say this once (don't repeat it on every output):
 
 > You can use every feature here — research, review, drafting, tracking. Two things change in how I work:
 >
@@ -188,13 +230,15 @@ If the answer is 2 or 3, say this once (don't repeat it on every output):
 >
 > This isn't a disclaimer. It's the plugin knowing the difference between what it's good at — research, organization, structure — and licensed legal judgment about your specific situation, which a tool can't give you. A few hours of a lawyer's time at the right moment is usually cheaper than the mistake.
 
-If the answer is 3, add:
+If the answer is 4, add:
 
-> If you need to find an attorney, solicitor, barrister, or other authorised legal professional: contact your professional regulator (state bar in the US, SRA/Bar Standards Board in England & Wales, Law Society in Scotland/NI/Ireland/Canada/Australia, or your jurisdiction's equivalent) — most offer a lawyer referral service (your jurisdiction's bar association, law society, or legal aid body) as the fastest starting point. Many offer free or low-cost initial consultations. For small businesses, local law school clinics (and equivalents like SCORE mentors in the US) can point you in the right direction. For individuals, legal aid organizations cover many practice areas.
+> If you need to find an attorney, solicitor, barrister, or other authorised legal professional: contact your professional regulator (the bar or lawyers' association of your primary jurisdiction — for `ksa` the Saudi Bar Association; state bar in the US, SRA/Bar Standards Board in England & Wales, Law Society in Scotland/NI/Ireland/Canada/Australia, or your jurisdiction's equivalent) — most offer a lawyer referral service (your jurisdiction's bar association, law society, or legal aid body) as the fastest starting point. Many offer free or low-cost initial consultations. For small businesses, local law school clinics (and equivalents like SCORE mentors in the US) can point you in the right direction. For individuals, legal aid organizations cover many practice areas.
 
 #### What's connected?
 
 > This plugin can work with: CLM (Ironclad, Agiloft, etc.), e-signature (DocuSign, etc.), document storage (Google Drive, SharePoint, Box), and Slack. Let me check which connectors you have configured — features that need them will work, and features that don't have them will fall back to manual gracefully instead of failing silently.
+>
+> Two jurisdiction questions about connectors: (1) Any data-residency constraint on where contract data may be processed — a sector regulator's rule, or a customer requirement? (The `ksa` data-protection file says localisation comes from sector regulators, not the PDPL, `[model knowledge — verify]`; the Ironclad connector shipped here is a North-America-region endpoint.) (2) Do you need a locally licensed e-signature provider for some documents, or is a platform signature acceptable between the parties? (For `ksa`: `electronic-transactions-law.md` — platform signatures are valid, statutory presumptions attach only to a licensed-certificate signature, and government counterparties must consent expressly.) I'll record both under `## Available integrations`.
 
 **Check what's actually connected, not what's configured.** A connector listed in `.mcp.json` is *available*. A connector that's actually responding is *connected*. These are different, and confusing them destroys trust. For each connector this plugin uses:
 
@@ -221,7 +265,8 @@ Ask once, early, so Part 3 (escalation) branches correctly:
 > - **Solo / small firm (no hierarchy)** — I'll skip approval-chain questions and ask when you'd loop in a colleague or outside counsel instead.
 > - **Midsize / large firm** — I'll ask about your approval chain, billing thresholds, and who signs off above you.
 > - **In-house** — I'll ask about your escalation matrix, who the GC/CLO is, and when something goes to the business.
-> - **Government / legal aid / clinic** — I'll ask about supervision structure and any restrictions on your practice.
+> - **Government / public body / state-owned enterprise legal department** — I'll ask about the approval chain inside the entity and whether your contracts fall under the public-procurement law (for `ksa`: `government-tenders-procurement-law.md` Arts. 1, 10, 93).
+> - **Legal aid / clinic** — I'll ask about supervision structure and any restrictions on your practice.
 > - **My practice doesn't fit any of these** — say so. I'll adapt.
 
 **Practices that don't fit the boxes.** If the user's practice doesn't match the options above (international arbitration, public international law, amicus-only, academic consulting, pro bono panel, tribal court, military justice, maritime, or anything else the standard categories assume away), offer: "It sounds like your practice doesn't fit my usual categories. Tell me about it in your own words — what you do, who for, what jurisdictions and forums, what the work looks like — and I'll build your profile from that instead of forcing you into boxes that don't fit. I'll skip or adapt the questions that don't apply." Then build the profile from the free-form description, flagging which template fields were filled, adapted, or left empty because they don't apply. A profile built from a forced fit is worse than a sparse profile built from what's actually true.
@@ -243,12 +288,16 @@ Write `## Who's using this` and `## Available integrations` sections immediately
 
 Ask conversationally, one cluster at a time. Don't interrogate — listen for what they volunteer beyond the question.
 
-**What does [your company] do?** This is the single most important context — a SaaS vendor's playbook, a hardware distributor's playbook, and a services firm's playbook are completely different. You don't have to type it out: paste a link to your company website, your "about" page, your Wikipedia article, or your latest 10-K, and I'll extract what I need. Or give me the one-sentence version: what you sell, to whom, and how (direct sales / channel / marketplace / subscription).
+**What does [your company] do?** This is the single most important context — a SaaS vendor's playbook, a hardware distributor's playbook, and a services firm's playbook are completely different. You don't have to type it out: paste a link to your company website, your "about" page, your Wikipedia article, or your latest annual report or commercial-register extract (CR extract, Companies House filing, Kbis, Handelsregister, 10-K), and I'll extract what I need. Or give me the one-sentence version: what you sell, to whom, and how (direct sales / channel / marketplace / subscription).
 
-**Who are you?**
-- Company name and entity type (Delaware C-corp? LLC? Something else?)
+**Who are you?** (Entity questions — the forms and registrations offered come from the primary code's files; for `ksa` the entity types are the `companies-law.md` list in `playbook-defaults.md` (LLC, JSC, simplified JSC, general or limited partnership, branch of a foreign company, professional company) and the registry identifiers are the `filing-calendar.md` row. For `usa`, ask the upstream way: Delaware C-corp, LLC, or something else. For another populated code, use its files; if its files have no entity list, ask free-form and tag `[no rule in <code> files — verify]`.)
+- Company name, legal form under the primary jurisdiction's companies law, and the commercial registration number (CR / Companies House number / SIREN / UID). Paste the register extract if you have it — I'll read the form, number and activity from it.
+- Foreign-investment registration, if any (for `ksa`: the MISA investment registration certificate, `investment-law.md`; say "not applicable" if wholly locally owned).
+- Sectors and activities you contract in (these decide which regulator's rules a review must check — for `ksa`, whether a counterparty is a government entity, whether a data-localisation rule applies, whether a distribution structure needs registration).
+- Headcount, split by nationality where the primary jurisdiction's labor rules turn on it, and the nationalisation band and social-insurance registration number where they exist (for `ksa`: Nitaqat band per `saudization-nitaqat.md`, GOSI number per `social-insurance-law.md`). These are captured here once so the commercial review knows when a counterparty is an individual worker (`labor-law.md` Art. 83) and so the other plugins do not re-ask; say "skip" if another plugin already holds them.
 - How big is the contracts team? Just you? A few lawyers? Paralegals?
 - Who's the GC or whoever the buck stops with?
+- Primary contract language: do you paper in English, in the authoritative language, or bilingual with a prevailing-language clause? (For `ksa`, `playbook-defaults.md` records the practice position that the Arabic text prevails in a local forum unless the contract says otherwise, `[model knowledge — verify]`.)
 
 **What comes through the door?**
 - What's the rough volume? Ten contracts a month? A hundred?
@@ -283,11 +332,11 @@ Carry the selected side through Part 2. When phrasing playbook questions, frame 
 - **AI/ML training rights.** This is the fastest-moving clause in SaaS contracts right now and every vendor has a default. If you don't have a position, you'll get the vendor's default. "Hard no / case-by-case / don't care" is not enough — the review skill runs a seven-point sub-checklist and each dimension needs a playbook position. Ask through each:
   1. **Explicit training grants** — hard no / acceptable if narrowly defined / don't care?
   2. **Implicit grants via privacy-policy incorporation** — refuse if policy can change unilaterally / acceptable / don't care?
-  3. **Anonymization standard** — require a named standard (GDPR Recital 26, HIPAA Safe Harbor) / "anonymized" without a definition is acceptable / don't care?
+  3. **Anonymization standard** — require a named standard from your jurisdiction (for `ksa`: the identifiability test in `personal-data-protection-law.md` Art. 1 and the Art. 18 de-identification condition; the technical anonymisation regulation is not in the file, `[no rule in ksa files — verify]`; for `usa` or an EU footprint: GDPR Recital 26, HIPAA Safe Harbor) / "anonymized" without a definition is acceptable / don't care?
   4. **Competitive contamination** — require competitive-isolation commitment when vendor serves competitors / case-by-case / don't care?
   5. **Opt-out scope and durability** — require opt-out that covers all AI uses and survives renewals+TOS updates / accept any opt-out / don't require?
   6. **Output ownership** — require customer owns outputs / accept vendor retention of outputs as training examples / don't care?
-  7. **Downstream regulatory chain** — require vendor to surface EU AI Act / FTC §5 / state AI law exposure / don't require?
+  7. **Downstream regulatory chain** — require the vendor to surface exposure under your jurisdiction's regulators (for `ksa`: SDAIA under `personal-data-protection-law.md` — impact assessment, Art. 22 and Regulation Art. 25; transfer, Art. 29; no AI-specific statute is in the files, `[no rule in ksa files — verify]`; for `usa` or an EU footprint: EU AI Act / FTC §5 / state AI law) / don't require?
 
   Record positions per dimension in a `## AI/ML training rights` section of the practice profile. "Hard no across the board" is a valid answer — but it's seven hard nos, written explicitly, not one.
 
@@ -307,9 +356,11 @@ If they share one: read it, extract positions for each playbook category, note w
 
 If they don't have one: proceed with the questions below.
 
+**Jurisdiction playbook defaults — offered row by row before the questions.** For a populated primary code, open `references/jurisdictions/<code>/playbook-defaults.md` → the **Commercial** table. Walk the rows one at a time, in the file's order, each as one tap-through prompt: "Default for [Field]: [Default text] — basis: [Basis column, with its file, articles and tag]. Accept, edit, or reject?" Accept writes the default into the matching playbook position with the Basis citation and tag beside it; edit writes the user's wording with the same citation; reject writes `[rejected default — <Field>]` so the review skills know the position was considered. Never state a default whose Basis cell is missing, and never add a row the file does not have. Record which rows were accepted, edited or rejected on the `**Jurisdiction playbook defaults accepted:**` line in `## Jurisdiction` and on the `**Jurisdiction playbook defaults applied:**` line of the side's `Governing law and venue`. For `ksa` the rows are: governing law preferred and acceptable; dispute forum preferred, acceptable and escalate; government or government-linked counterparty; liquidated damages and penalties; limitation and exclusion of liability; hardship and force majeure; assignment; limitation period for claims; interest and late-payment charges; e-signature; data protection clauses; non-compete and non-solicit; confidentiality survival; auto-renewal; contract language; currency; calendar. For `usa` there is no file: skip this block and ask the questions plainly. The questions below then cover only what the defaults left open, in the voice of the side being built.
+
 **Limitation of liability**
-- What's your standard cap? 12 months fees? Fixed dollar amount?
-- What carveouts do you accept? (Confidentiality, IP indemnity, gross negligence are typical — confirm theirs)
+- What's your standard cap? 12 months fees? A fixed amount in [currency]?
+- Carveouts. For a populated non-`usa` code, pre-fill the carveouts the law imposes regardless of the playbook from the defaults row "Limitation and exclusion of liability" (for `ksa`: `civil-transactions-law.md` Art. 173 — fraud and gross fault can never be excluded and tort liability cannot be excluded by agreement; Art. 180 — foreseeability) and say: "These carve-outs apply whatever you negotiate; which additional ones do you accept — confidentiality, IP indemnity, data breach?" For `usa`: "Confidentiality, IP indemnity, gross negligence are typical — confirm yours."
 - What have you walked away from?
 
 **Indemnification**
@@ -318,17 +369,20 @@ If they don't have one: proceed with the questions below.
 - Any indemnity you categorically refuse?
 
 **Data protection**
-- Do you have a standard DPA? Yours, or do you take theirs?
-- SOC 2 required for all vendors, or just ones touching customer data?
-- Subprocessor approval rights — blocking or notification?
+- Do you have a standard DPA? Yours, or do you take theirs? (For a populated non-`usa` code, note the mandatory processor terms from the defaults row "Data protection clauses" — for `ksa`, `personal-data-protection-law.md` Art. 8 / Regulation Art. 17(1) — and ask whether the house DPA already carries them.)
+- Which assurance standard do you require, and from which vendors — SOC 2, ISO 27001, or a local standard (for `ksa`: the NCA Essential Cybersecurity Controls that `personal-data-protection-law.md` Regulation Art. 23 points to for NCA-regulated customers, `[authority — SDAIA]`; otherwise a recognised standard)? All vendors, or only those touching customer data?
+- Subprocessor approval rights — blocking or notification? (For `ksa`, Regulation Art. 17(5) requires prior acceptance with an agreed objection window; a notification-only position is below the statutory floor and is recorded as such.)
 
 **Term and termination**
 - Termination for convenience — how much notice do you need?
-- Auto-renewal — what's the longest notice-to-cancel you'll accept?
-- Termination fees — ever acceptable?
+- Auto-renewal — what's the longest notice-to-cancel you'll accept? (For a populated non-`usa` code, state the defaults row "Auto-renewal" — for `ksa`: not statutorily regulated for B2B contracts, a drafting point — so the answer is a pure playbook number.)
+- Termination fees and liquidated damages — acceptable, and on what terms? For a populated non-`usa` code, state the defaults row "Liquidated damages and penalties" first (for `ksa`: `civil-transactions-law.md` Arts. 178-179 — reducible by the court, not due where no harm, no contracting out, not available on money debts) so the position is set with the reduction rule in view. For `usa`: the void-as-penalty rule is the upstream branch, `[jurisdiction — verify]`.
 
-**Governing law**
-- Preferred? Acceptable? Never?
+**Governing law and forum**
+- Governing law — Preferred? Acceptable? Escalate? Never? (Offer the defaults rows "Governing law, preferred" and "Governing law, acceptable" first where a file exists.)
+- Forum — courts or arbitration? If arbitration: institution (for `ksa`, the defaults row names the SCCA Arbitration Rules 2023; alternatives LCIA / ICC / Swiss Arbitration Centre are the user's call), seat, and language of proceedings. If courts: which (for `ksa`: the Commercial Courts, `commercial-courts-law.md`). (Offer the "Dispute forum" rows; the file notes the SCCA Rules have no seat or language default, so the clause must state them.)
+- Prevailing contract language when the paper is bilingual.
+- Foreign court jurisdiction clauses — acceptable, escalate, or never? (For `ksa` the defaults row says escalate: foreign judgments are enforced only on reciprocity and public-order conditions, `enforcement-law.md`.)
 
 **The one thing**
 - If a contract has exactly one problem that would make you refuse to sign it, what is it?
@@ -349,8 +403,10 @@ If they don't have one: proceed with the questions below.
 
 > When a review finds something that needs someone more senior to sign off — a term that's above playbook (a higher LoL cap, an indemnity structure outside your fallbacks), a risk that needs a second opinion, or a decision that's above your authority — who does that go to? Give me a name or a role (the GC, your boss, the deal partner), or say "I decide myself." This is how the plugin knows when to say "you can handle this" versus "loop in [X]." (This feeds /escalation-flagger — the skill drafts the escalation ask using this matrix, and /review uses it to decide whether a flagged term lands in your lane or somebody else's.)
 
+**Approval thresholds are in your currency.** Ask for the value thresholds in the currency recorded in `## Jurisdiction` (for `ksa`: SAR); write them with the currency code, never a symbol the profile does not carry.
+
 **Automatic escalations**
-- What triggers an escalation regardless of dollar value? (Typical answers: unlimited liability, IP assignment to counterparty, anything on a "never accept" list from the playbook.)
+- What triggers an escalation regardless of contract value? (Typical answers: unlimited liability, IP assignment to counterparty, anything on a "never accept" list from the playbook. For a populated non-`usa` code, tell the user which triggers the jurisdiction files already name for `escalation-flagger` — for `ksa`: government contracts with penalties above the `government-tenders-procurement-law.md` Art. 72 caps or foreign-seated arbitration, interest clauses, conflicts with the mandatory rows of `civil-transactions-law.md`, unregistered agency structures — and ask whether to add their own.)
 
 **Channel and timing**
 - How do people escalate today — Slack, email, a ticket, a standing meeting?
@@ -409,19 +465,47 @@ fix it here and it's fixed everywhere.*
 
 ## Who we are
 
-[Company name] is a [entity type]. The contracts team is [N] people: [names/roles
+[Company name] is a [legal form under the primary jurisdiction's companies law]. The contracts team is [N] people: [names/roles
 if given]. [GC name] is the final escalation point. We process roughly [N]
 agreements per month, mostly [vendor/customer/mix]. We use [CLM/other] for
 contract lifecycle management.
 
+**Commercial registration:** [CR / Companies House / SIREN / UID number]
+**Legal form:** [form from the primary code's companies-law file, or the user's wording tagged `[no rule in <code> files — verify]`]
+**Foreign-investment registration:** [certificate / N/A]
+**Sectors and activities:** [list]
+**Headcount by nationality, nationalisation band, social-insurance registration:** [as given, or "held in the employment-legal profile"]
+**Primary contract language:** [English | authoritative language | bilingual, prevailing text: X]
+
 **The thing that hurts:** [what they said hurts — write it in their words]
+
+**Practice setting:** [Solo/small firm | Midsize/large firm | In-house | Government / public body / state-owned enterprise | Legal aid/clinic]
 
 ---
 
 ## Who's using this
 
 **Role:** [Lawyer / legal professional | Non-lawyer with attorney access | Non-lawyer without attorney access]
-**Attorney contact:** [Name / team / outside firm / N/A — fill in if non-lawyer]
+**Attorney contact:** [Name / team / outside firm / N/A — the licensed local lawyer who signs off, for every role]
+**Local counsel for escalation:** [firm / name / N/A — a lawyer admitted in the primary jurisdiction; also recorded in `## Jurisdiction`]
+
+---
+
+## Jurisdiction
+
+*Written by the cold-start interview. Every skill reads this section first (Step 0: Resolve the applicable jurisdiction) and loads `references/jurisdictions/<code>/` for each code. See `references/jurisdictions/REGISTRY.md` for the codes and their populated status.*
+
+**Primary jurisdiction:** [ISO 3166-1 alpha-3 lowercase code, e.g. `ksa`]
+**Footprint (other jurisdictions this practice operates in):** [list of codes, or none — an unpopulated footprint code is listed with "(not populated)"]
+**Authoritative language of the primary jurisdiction:** [from the jurisdiction manifest]
+**Output language:** [English | English plus the authoritative language for the bottom line, findings table, and counterparty-facing text (bilingual) | authoritative language only]
+**Calendar for deadlines:** [from the jurisdiction manifest: weekend days, public holidays, Hijri or Gregorian]
+**Currency for thresholds:** [from the manifest, e.g. SAR]
+**Primary-source portal:** [from the manifest, e.g. https://laws.boe.gov.sa]
+**Local counsel available for escalation:** [name / firm / N/A; a licensed lawyer admitted in the primary jurisdiction]
+**Jurisdiction playbook defaults accepted:** [which rows of `references/jurisdictions/<code>/playbook-defaults.md` the user accepted at cold-start, and which they changed or rejected]
+
+**Unpopulated jurisdiction rule.** If any code above resolves to a manifest with `populated: no`, every skill stops for that code and says so. It never applies another jurisdiction's rules or model knowledge in its place.
 
 ---
 
@@ -433,6 +517,9 @@ contract lifecycle management.
 | E-signature (DocuSign, etc.) | [✓ / ✗] | User routes for signature outside the plugin |
 | Document storage (Drive / SharePoint / Box) | [✓ / ✗] | User uploads agreements directly for each review |
 | Slack | [✓ / ✗] | Alerts and stakeholder summaries delivered inline instead of posted |
+
+**Data-residency constraint on connectors:** [none stated / rule and source / customer requirement]
+**E-signature regime:** [platform signature acceptable between the parties / licensed local certificate required for: … — per the primary code's `electronic-transactions-law.md` rows, or N/A for `usa`]
 
 *Re-check: `/commercial-legal:cold-start-interview --check-integrations`*
 
@@ -484,6 +571,10 @@ contract lifecycle management.
 **Acceptable:** [list]
 **Escalate:** [list]
 **Never:** [list]
+**Forum:** [courts | arbitration]
+**Arbitration institution and seat:** [e.g. SCCA, Riyadh — or N/A]
+**Language of proceedings and prevailing contract language:** [as answered]
+**Jurisdiction playbook defaults applied:** [rows accepted from `references/jurisdictions/<code>/playbook-defaults.md`, each with its Basis citation and tag; rejected rows listed as rejected]
 
 #### The one thing
 
@@ -497,7 +588,7 @@ contract lifecycle management.
 
 *[If not configured yet: leave the pointer "[Not configured — run /commercial-legal:cold-start-interview --side purchasing to build it]" in place of the subsections below.]*
 
-[Same subsection structure as Sales-side: Limitation of liability, Indemnification, Data protection, Term and termination, Governing law and venue, The one thing. Calibrated for purchasing — what we accept from vendors, not what we offer customers.]
+[Same subsection structure as Sales-side: Limitation of liability, Indemnification, Data protection, Term and termination, Governing law and venue (with Forum, Arbitration institution and seat, Language of proceedings and prevailing contract language, Jurisdiction playbook defaults applied), The one thing. Calibrated for purchasing — what we accept from vendors, not what we offer customers.]
 
 ---
 
@@ -505,14 +596,15 @@ contract lifecycle management.
 
 | Can approve | Without escalation | Escalate to | Via |
 |---|---|---|---|
-| [Junior] | [their threshold] | [You] | [Slack/email] |
+| [Junior] | [their threshold, in the profile currency] | [You] | [Slack/email] |
 | [You] | [your threshold] | [GC] | [method] |
 | [GC] | [GC threshold] | [Business owner] | [method] |
 
-**Dollar thresholds:** [if they mentioned any]
+**Value thresholds (in the profile currency, see `## Jurisdiction`):** [if they mentioned any — written with the currency code]
 
-**Automatic escalations regardless of dollar value:**
+**Automatic escalations regardless of contract value:**
 - [their list — unlimited liability, unfavorable IP, etc.]
+- [the jurisdiction-file triggers the user kept, each with its file and article]
 
 ---
 
@@ -526,6 +618,8 @@ contract lifecycle management.
 
 **Where signed contracts live:** [CLM system + executed filter / Google Drive folder path / SharePoint library / manual upload]
 
+**Output language and calendar:** [from `## Jurisdiction` — English | bilingual | authoritative language only; dates Gregorian with Hijri alongside where the manifest calendar is Hijri; number format]
+
 ---
 
 ## Outputs
@@ -534,6 +628,12 @@ contract lifecycle management.
 
 - If Role is Lawyer / legal professional: `PRIVILEGED & CONFIDENTIAL — ATTORNEY WORK PRODUCT — PREPARED AT THE DIRECTION OF COUNSEL`
 - If Role is Non-lawyer: `RESEARCH NOTES — NOT LEGAL ADVICE — REVIEW WITH A LICENSED ATTORNEY, SOLICITOR, BARRISTER, OR OTHER AUTHORISED LEGAL PROFESSIONAL IN YOUR JURISDICTION BEFORE ACTING`
+
+[When the primary jurisdiction or the footprint is not `usa`, copy the template's "The header's protection is jurisdiction-specific" paragraph and its bullets here from `${CLAUDE_PLUGIN_ROOT}/CLAUDE.md` `## Outputs`, and add the jurisdiction note under the lawyer header: `[Note: "work product" protection is a US doctrine. Protections in [primary jurisdiction name] differ — confirm the applicable privilege/confidentiality regime before relying on this marking to shield the document from disclosure.]` The privilege position for `ksa` is not in the reference files and is a point for local counsel, `[no rule in ksa files — verify]`.]
+
+**Jurisdiction disclaimer line.** For every deliverable that applies a jurisdiction other than `usa`, add the manifest's `disclaimer` line directly under the work-product header, in English and in the authoritative language: [copy the `disclaimer` row of `references/jurisdictions/<primary code>/MANIFEST.md` here verbatim, both languages]. The line is part of the header: it is never stripped from an internal deliverable, and it stays on counterparty-facing text.
+
+**Bilingual house style.** [Copy the template's "Bilingual house style" paragraph from `${CLAUDE_PLUGIN_ROOT}/CLAUDE.md` `## Outputs` here, filled with the output-language answer from `## Jurisdiction` and the manifest's `output_language_rule`.]
 
 Remove the header from externally-facing deliverables (counterparty-facing redlines, stakeholder summaries forwarded outside legal) — see the specific skill's instructions. Confirm the correct marking for your jurisdiction and matter.
 
@@ -595,9 +695,10 @@ This solves the cold-start problem (the supervisor doesn't know what to do first
 
 1. **Show it to them.** Not the whole thing — a summary. "Here's what I heard. Take a look at the plugin config and tell me what I got wrong."
 
-2. **Research connector prompt.** Say:
+2. **Research source prompt.** Branch on the primary code:
 
-   > "Before your first contract review: connect a research tool. Without one, I'll flag every citation as unverified — with one, I verify them against a current database. In Cowork: Settings → Connectors. In Claude Code: authorize when a skill prompts you."
+   - *Populated non-`usa` code:* "Before your first contract review, make sure the primary-source portal is reachable: for `<code>` it is [manifest `source_portal`], fetched with `[manifest research_tool]` (for `ksa`: `python3 scripts/fetch-law.py --portal boe --id <guid> --lang ar`, GUIDs in `references/jurisdictions/ksa/SOURCES.md`; the built-in web-fetch tool rejects the portal's TLS chain, so the script or `curl` is used). Every skill probes it before citing and records `portal: <host> ✓ reachable | unreachable` in the reviewer note; when it is unreachable, articles are cited from the reference files with their `[settled — last confirmed …]` dates and nothing is supplied from memory." Run the probe now (`scripts/fetch-law.py --portal boe --index`, or a `curl` of the portal home) and report the result the same way the connector check does: ✓ only on a real response.
+   - *`usa`:* "Before your first contract review: connect a research tool (CourtListener, Westlaw, or a statute/regulator MCP). Without one, I'll flag every citation as unverified — with one, I verify them against a current database. In Cowork: Settings → Connectors. In Claude Code: authorize when a skill prompts you."
 
 3. **Propose starter skills.** Based on what hurts:
    - "You said renewals sneak up on you — I have a renewal tracker. Want me to scan [CLM] for everything expiring in the next 90 days?"
@@ -613,7 +714,7 @@ This solves the cold-start problem (the supervisor doesn't know what to do first
    > - Run `/commercial-legal:cold-start-interview --redo` for a full re-interview
    > - Run `/commercial-legal:cold-start-interview --check-integrations` to re-check what's connected
    >
-   > The sections most often adjusted after first setup are the escalation thresholds and approval matrix, the playbook positions on LoL / indemnity / DPA, and the 'one thing' deal-breaker."
+   > The sections most often adjusted after first setup are the escalation thresholds and approval matrix, the playbook positions on LoL / indemnity / DPA, and the 'one thing' deal-breaker. To change the jurisdiction itself, run `/commercial-legal:customize jurisdiction` — it re-offers the playbook defaults for the new code and re-checks every position against its files."
 
 ## Your practice profile learns
 
@@ -639,5 +740,6 @@ If they give you a short answer, it's fine to follow up once ("12 months — is 
 - **Don't write YAML.** The practice profile is prose with occasional tables. They edit it in a text editor, not a schema validator.
 - **Don't skip the seed docs.** The interview tells you what they think their playbook is. The docs tell you what it actually is. Both matter.
 - **Don't write a generic playbook.** If their answers are generic ("reasonable market terms"), push gently: "Give me a number. When a vendor says 24-month cap, do you counter or sign?"
+- **Don't write a profile for an unpopulated primary jurisdiction, and don't invent a default.** Every jurisdiction default offered comes from `references/jurisdictions/<code>/playbook-defaults.md` with its Basis cell; a position the file does not cover is asked plainly and written without a citation. Never write any jurisdiction's rule into the profile from memory.
 - **Don't promise things the other skills can't deliver.** Check what skills exist in this plugin before offering them.
 - **Don't run this interview on every session.** Check the plugin config first. If it's populated, you're done.

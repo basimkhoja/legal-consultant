@@ -39,7 +39,9 @@ def main():
             continue
         text = open(os.path.join(folder, f), encoding="utf-8").read()
         inst = re.search(r"## Instrument\n(.*?)\n## ", text, flags=re.S)
-        table = inst.group(1) if inst else ""
+        if not inst:
+            continue  # not an instrument file (e.g. playbook-defaults.md)
+        table = inst.group(1)
         rules = re.search(r"## Rules\n(.*?)\n## ", text, flags=re.S)
         body = rules.group(1) if rules else ""
         rule_rows = []

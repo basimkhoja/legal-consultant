@@ -36,6 +36,8 @@ rules change frequently and vary by role, headcount, and industry — the skill
 routes every country through an outside-counsel briefing rather than relying
 on a stored reference table.
 
+**Fork addition.** Where the target country has a populated jurisdiction folder under `references/jurisdictions/<code>/`, the folder's instrument files (each row tagged with its provenance and the date the primary text was read) pre-fill the briefing so that outside counsel does a currency check rather than a first-principles survey. The folder is the only source the skill may draw on for local rules; a rule the folder does not carry stays a question to counsel. An unpopulated folder is a hard stop for that country, not a caveat.
+
 ## Load context
 
 Read `~/.claude/plugins/config/claude-for-legal/employment-legal/CLAUDE.md` → jurisdictional footprint, escalation table, any existing
@@ -46,6 +48,38 @@ expansion notes.
 Prepend the work-product header from `~/.claude/plugins/config/claude-for-legal/employment-legal/CLAUDE.md` → `## Outputs` (it differs by user role — see `## Who's using this`).
 
 ## Workflow
+
+### Step 0: Resolve the applicable jurisdiction
+
+1. **Read the practice profile's `## Jurisdiction` section.** It gives the primary jurisdiction code, the footprint list (other codes the practice operates in), the output-language preference, and whether local counsel is available for escalation. Codes are ISO 3166-1 alpha-3 lowercase (`ksa`, `gbr`, `fra`, `che`, `usa`). If the section is missing or still a placeholder, stop: "The practice profile has no jurisdiction. Run the cold-start interview; nothing in this skill can run against the wrong jurisdiction."
+2. **Determine the matter's jurisdiction(s).** Start from the primary code. Then read the matter facts: governing-law clause, seat of arbitration, place of employment, jurisdiction of incorporation, place of performance. If the facts point to a code not in the profile, add it for this matter and say so in the reviewer note. A matter may have more than one code (a contract governed by English law with a Saudi counterparty and Saudi performance is `gbr` + `ksa`).
+3. **Load the jurisdiction folder for each code.** The folder is `references/jurisdictions/<code>/` in this plugin (the same tree ships at the repo root and in every runtime adapter). Read `MANIFEST.md` first.
+   - If `populated` is not `yes`: **stop for that code.** Say: "Jurisdiction `<code>` (<name>) is registered but not populated: no reference files exist for it. I will not apply another jurisdiction's rules or model knowledge in its place. Options: (1) populate `references/jurisdictions/<code>/` (see README, 'How to add a jurisdiction'), (2) route this matter to local counsel, (3) tell me to proceed with the analysis limited to the populated jurisdictions in this matter, with every finding for `<code>` marked `[not populated — no rule applied]`." Wait for the answer. Never fall back silently.
+   - If the code is `usa`: there is no folder. Follow this skill's US path (the upstream doctrine and the upstream research connectors, CourtListener or Westlaw, with the upstream "no silent supplement" rule). Label findings `[usa]`.
+   - If `populated` is `yes`: read `INDEX.md`, then the instrument files this skill names in its "Jurisdiction files" list. A row tagged `[settled — last confirmed YYYY-MM-DD]` may be applied and cited by article. A row tagged `[model knowledge — verify]` may be applied only with that tag carried onto the finding. If a rule this skill needs is not in the files at all, do not supply it from memory: say what is missing, tag the gap `[no rule in <code> files — verify]`, and continue only with the rules that exist.
+4. **Multi-jurisdiction matters.** Run the relevant files side by side. Label every finding with its code in square brackets, `[ksa]`, `[gbr]`, `[usa]`, and never merge two jurisdictions' rules into one sentence. Where the codes conflict (a clause valid under one law and reducible under another), state both and flag `[review]` for the lawyer to decide which governs.
+5. **Research step (when a rule must be quoted or its currency checked).** Use the portal named in `MANIFEST.md` → `research_tool`. For `ksa`: `python3 scripts/fetch-law.py --portal boe --id <guid> --lang ar` (GUIDs in `SOURCES.md`), or `curl -sS https://laws.boe.gov.sa/BoeLaws/Laws/LawDetails/<guid>/1`; the built-in web-fetch tool rejects the portal's TLS chain. Quote the article, tag `[BOE — Arabic]` (or `[BOE — official English]` when quoting the translation), and check the status line and the "تعديلات المادة" block for amendments. If the fetch fails or the article is not found, apply the "no silent supplement" rule: report the failure and stop, or continue with the rule tagged `[model knowledge — verify]` only if the user says so.
+6. **Calendar and language.** Take the weekend, public-holiday, calendar (Hijri or Gregorian) and currency rules from `MANIFEST.md`. Compute every date and roll-back against that calendar, never against a Saturday/Sunday weekend or US federal holidays. Produce the deliverable in English; when the profile's output-language preference is bilingual, or the manifest's authoritative language is not English and counterparty-facing text is produced, add the authoritative-language rendering of the bottom line, the findings table, and any counterparty-facing text, using the spellings in the manifest's `output_language_rule`.
+7. **Header and disclaimer.** Prepend the manifest's `disclaimer` line under the work-product header for every deliverable that applies a non-`usa` jurisdiction. For `ksa`: "Arabic text is authoritative; English translations are for convenience; a licensed Saudi lawyer must review before reliance." with its Arabic rendering from the manifest.
+8. **Record in the reviewer note.** `Jurisdiction: <codes applied>; files: <list>; portal fetched: yes/no; unpopulated codes: <list or none>.`
+
+For this skill the "matter" in item 2 is the expansion itself: the target country named at intake is the matter's jurisdiction, and the company's home country (the HQ country in `~/.claude/plugins/config/claude-for-legal/company-profile.md`) is a second code where a question turns on the parent (intercompany agreements, employee-data transfers). Resolve both.
+
+**Jurisdiction files this skill loads** (for a populated target code; every article reference below is a pointer to a row of the named file, and the file's own tag travels with anything taken from it):
+
+- `references/jurisdictions/<code>/MANIFEST.md` (populated flag, calendar, currency, disclaimer, research portal) and `INDEX.md` (which instrument files exist).
+- `references/jurisdictions/<code>/playbook-defaults.md` → Labor table (the starting positions for briefing items 2-5 and 12).
+- `references/jurisdictions/<code>/labor-law.md` → Arts. 32-40 (recruitment approval, work permits, Art. 37 fixed-term rule for non-nationals, Art. 40 employer-borne fees), Arts. 51-53 (contract form, contents, probation), Arts. 74-77 and 84-88 (termination grounds, notice, compensation, end-of-service award, settlement window), Arts. 98-117 (hours, weekly rest, overtime, leave), Art. 83 (non-compete).
+- `references/jurisdictions/<code>/saudization-nitaqat.md` → Art. 26 nationalisation duty, the Services-by-Range row, Reg. Art. 14 recruitment conditions, the labour-services row on workers supplied by a licensed company.
+- `references/jurisdictions/<code>/platform-obligations.md` → Arts. 15-16 (establishment file), Art. 51 / Reg. Art. 18 (contract documentation on the approved platform), Arts. 33-35 (permits and renewal), Art. 30 / Art. 229 bis (licensed outsourcing activity), Art. 90 (wage payment through approved banks), the GOSI rows.
+- `references/jurisdictions/<code>/social-insurance-law.md` → Arts. 1, 7-10, 15, 28-29, 43-44 (employer registration and contribution cost by nationality and hire date).
+- `references/jurisdictions/<code>/personal-data-protection-law.md` → Art. 6(2), Art. 13, Art. 29 and the transfer-regulation row (employee data flowing to the parent; briefing item 7).
+- `references/jurisdictions/<code>/investment-law.md` and `companies-law.md` → foreign-investor registration and entity types (the entity side of the EOR-vs-entity step).
+- `references/jurisdictions/<code>/labor-dispute-route.md` → Art. 234 limitation, Art. 8 (releases), the friendly-settlement row (briefing item 3, documentation standard).
+
+For `ksa` these are the files that exist today under `references/jurisdictions/ksa/`. If a file named above does not exist in the target folder, say so and tag the briefing item that needed it `[no rule in <code> files — verify]`.
+
+**Populated-folder branch (applies to Steps 2-4 and 6).** When Step 0 resolves the target country to a code whose manifest says `populated: yes`, the jurisdiction files pre-fill the briefing request in Step 4 and add rows to the trade-off table in Step 2, each item carrying the tag printed on the row it came from and labelled "currency check" for outside counsel. When the manifest says `populated: no`, stop for that country with the Step 0 wording; the outside-counsel briefing in Step 4 is then the only substantive path, and nothing in it may be pre-filled from model knowledge. When the target is `usa`, follow the upstream path (Steps 1-6 as written, research through the upstream connectors).
 
 ### Step 1 — Information gathering
 
@@ -98,6 +132,15 @@ Specific headcount break-even points, EOR markup ranges, setup costs, and
 timelines vary by country and provider — do not hardcode them. Route those
 questions to tax/finance and the EOR provider.
 
+**Jurisdiction-file rows on the EOR / outsourced-staffing option (populated target only).** Add a row to the table for each of the following that the target folder carries, citing the file and row and carrying the row's tag; do not paraphrase a rule the folder lacks:
+
+- `saudization-nitaqat.md` → labour-services licensing row: workers supplied by a licensed labour-services company are counted in the client's nationalisation ratio unless the ministry sets specific counting conditions. Points away from "EOR keeps us out of the quota".
+- `platform-obligations.md` → Labor Law Art. 30 (as amended) with Art. 229 bis: supplying workers to a third party is a licensed "outsourcing activity"; unlicensed supply carries the Art. 229 bis fine (the amount is on the row). Ask the EOR provider for its licence under that row and, for on-site expatriates, the Ajeer notice under Reg. Art. 13.
+- `platform-obligations.md` → Arts. 33-35: a work permit is granted only to a worker contracted with, and under the responsibility of, an employer, and renewal is gated by that employer's nationalisation standing (Services-by-Range row in `saudization-nitaqat.md`).
+- **Gap to state expressly.** The files carry no rule on whether an EOR may sponsor a work permit for a worker who in substance works for the client, nor on how the client's own nationalisation band is affected by EOR-employed nationals; for `ksa` this is `[no rule in ksa files — verify]` and goes into the briefing request as a question to counsel (Step 4, item 1).
+
+If the target folder is unpopulated, this table carries no jurisdiction rows: say so and leave the trade-off to the CFO/tax questions and the counsel briefing.
+
 **PE risk flag (route to tax counsel):**
 If roles include sales, business development, account management, or anyone
 with authority to negotiate or sign contracts on behalf of the company —
@@ -139,7 +182,8 @@ Questions legal should ask:
 - How are our equity awards (RSUs/options) taxed in [country]? Do we need
   local tax counsel to advise employees at grant and vesting?
 - If we set up an entity, what intercompany services agreement is needed
-  between the subsidiary and the US parent?
+  between the subsidiary and the parent per the company profile (HQ country
+  from `~/.claude/plugins/config/claude-for-legal/company-profile.md`)?
 
 **Finance / Payroll** (required before first paycheck)
 
@@ -188,7 +232,11 @@ varies by country *and* by role and headcount *and* by industry, and changes
 frequently. Treat every country as a country that requires verification — do
 not rely on the skill's own knowledge.
 
-Draft the briefing request below, tailored to the intake answers:
+Draft the briefing request below, tailored to the intake answers.
+
+**When the target country has a populated jurisdiction folder** (Step 0), pre-fill each numbered item from the files listed under "Jurisdiction files this skill loads" before sending: state the file's position under the item, cite the file and article, carry the row's own tag (`[settled — last confirmed YYYY-MM-DD]`, `[authority — <name>]`, or `[model knowledge — verify]`) unchanged, and label the item "currency check: confirm against the primary text and any amendment after the date in the tag". Items the files do not cover (for `ksa` today: EOR sponsorship of work permits, sectoral collective agreements, equity-award tax treatment) stay as open questions to counsel tagged `[no rule in <code> files — verify]`; items the files carry only as `[model knowledge — verify]` rows (for `ksa`: the penalties schedule amounts, the current nationalisation coefficients, the wage-protection thresholds) are pre-filled with that tag and listed as the first currency checks. Do not fill a gap from memory. For a quotation of an article, use the research step in Step 0 (for `ksa`: `python3 scripts/fetch-law.py --portal boe --id <guid> --lang ar`, GUIDs in `references/jurisdictions/<code>/SOURCES.md`; the built-in web-fetch tool rejects the portal's TLS chain, use the script or `curl`) and tag `[BOE — Arabic]` or `[BOE — official English]`; if the fetch fails, report it and leave the item as a counsel question rather than supplementing silently. Every pre-filled amount is in `[currency]` from the manifest, and every date is computed against the calendar in the manifest.
+
+**When the folder is unpopulated**, or the country has no folder and is not `usa`, send the briefing exactly as below with nothing pre-filled, and record the Step 0 stop wording in the reviewer note.
 
 **Outside counsel briefing request — [Country]**
 
@@ -228,7 +276,11 @@ Draft the briefing request below, tailored to the intake answers:
 >    are not unionized?
 >
 > 7. **Data protection** — what obligations apply to employee data? Is there
->    a data transfer mechanism needed for employee data flowing to the US?
+>    a data transfer mechanism needed for employee data flowing to the HQ
+>    country per the company profile? (When the target or the HQ country is
+>    a populated code, pre-fill from that code's
+>    `personal-data-protection-law.md` cross-border rows — for `ksa`, Art. 29
+>    and the transfer-regulation row, whose tag is carried as printed.)
 >
 > 8. **Work authorization** — what permits or visas are required for foreign
 >    nationals? What are the processing timelines?
@@ -248,9 +300,12 @@ Draft the briefing request below, tailored to the intake answers:
 > 12. **Day 1 compliance** — what must be in place before the first employee
 >     starts? Registration requirements, notices, filings, posters?
 >
-> 13. **Top 2-3 things that surprise US companies hiring here for the first
->     time** — what do you wish clients had asked you earlier? What has
->     *changed recently* that a US team might not have caught?
+> 13. **Top 2-3 things that surprise [HQ-country] companies hiring here for
+>     the first time** — what do you wish clients had asked you earlier? What
+>     has *changed recently* that a team from [HQ country] might not have
+>     caught? (When the target folder is populated, list the rows tagged
+>     `[model knowledge — verify]` and the folder's "Open questions for a
+>     local practitioner" here — those are the currency checks.)
 
 Add this briefing request to the expansion tracker as a single open item:
 owner = Outside Counsel, status = open, with the full briefing agenda in
@@ -300,7 +355,9 @@ attributable to a single owner.
 
 ### Step 6 — Output
 
-> **Jurisdiction assumption.** This plan frames the expansion to the single country identified in intake. Local employment law, tax rules, employee-representation obligations, and data-protection requirements vary materially by country, region, industry, and headcount, and change frequently. Every substantive local-law answer comes from the outside-counsel briefing request, not from this skill. If the plan is adapted for another country later, re-run the briefing.
+> **Jurisdiction assumption.** This plan frames the expansion to the single country identified in intake. Local employment law, tax rules, employee-representation obligations, and data-protection requirements vary materially by country, region, industry, and headcount, and change frequently. Every substantive local-law answer comes from the outside-counsel briefing request, not from this skill — pre-filled from the target's jurisdiction folder where one is populated, each item carrying the file's tag. If the plan is adapted for another country later, re-run Step 0 and the briefing.
+
+> **Header, disclaimer, language.** Prepend the work-product header, then, for any target that is not `usa`, the jurisdiction disclaimer line from the practice profile (`## Outputs` → Jurisdiction disclaimer line; for `ksa` the manifest's `disclaimer` in both languages). Apply the bilingual house-style rule from the plugin CLAUDE.md `## Outputs` to the bottom line, the open-items table and any counterparty-facing text when the profile's output language is bilingual. Amounts in `[currency]` and dates against the calendar in the manifest. Close the reviewer note with `Jurisdiction: <codes applied>; files: <list>; portal fetched: yes/no; unpopulated codes: <list or none>.`
 
 ```markdown
 [WORK-PRODUCT HEADER — per plugin config ## Outputs — differs by role; see `## Who's using this`]
@@ -311,6 +368,7 @@ attributable to a single owner.
 **Headcount (12 months):** [N]
 **Roles:** [list]
 **Tracker:** ~/.claude/plugins/config/claude-for-legal/employment-legal/expansion-[slug].yaml
+**Jurisdiction:** [code(s) from Step 0 — populated / unpopulated / usa; files loaded]
 
 ---
 
@@ -356,6 +414,9 @@ as items close.
 - Draft the local employment agreement — flags that outside counsel must do
   this.
 - State country-specific rules from its own knowledge — every country is
-  routed through an outside-counsel briefing.
+  routed through an outside-counsel briefing; where a populated jurisdiction
+  folder exists, the pre-fill comes from its files with their tags, never
+  from memory, and a gap in the files is tagged
+  `[no rule in <code> files — verify]`, not filled.
 - Substitute for outside counsel engagement — every new country requires
   local counsel, no exceptions.

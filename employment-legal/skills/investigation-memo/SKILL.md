@@ -18,7 +18,13 @@ or updates an existing draft when new data has been added.
 2. If drafting for the first time, warn if high-priority sources are still
    open on the checklist.
 3. If updating, show what changed before rewriting.
-4. All output is marked PRIVILEGED AND CONFIDENTIAL — ATTORNEY WORK PRODUCT.
+4. All output opens with the work-product header from
+   `~/.claude/plugins/config/claude-for-legal/employment-legal/CLAUDE.md` →
+   `## Outputs` (it differs by user role and by jurisdiction footprint — do
+   not hard-code a US "attorney work product" marking), followed, for every
+   jurisdiction other than `usa` applied per the reference skill's Step 0, by
+   the jurisdiction disclaimer line from the profile `## Jurisdiction`
+   section, and rendered per the bilingual house-style rule in `## Outputs`.
 
 ## Examples
 

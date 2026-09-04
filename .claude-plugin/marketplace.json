@@ -10,10 +10,11 @@
       "name": "commercial-legal",
       "displayName": "Commercial Legal",
       "source": "./commercial-legal",
-      "description": "Reviews vendor agreements, NDAs, and SaaS subscriptions against your sales-side or purchasing-side playbook, tracks renewals and cancel-by deadlines before they're missed, routes escalations to the right approver, and translates reviews into summaries business stakeholders will actually read.",
+      "description": "Reviews vendor agreements, NDAs, and SaaS subscriptions against your sales-side or purchasing-side playbook and the applicable jurisdiction's reference files, tracks renewals and cancel-by deadlines on the jurisdiction's calendar, routes escalations to the right approver, and translates reviews into bilingual summaries business stakeholders will actually read.",
       "author": {
         "name": "Anthropic"
-      }
+      },
+      "version": "2.0.0"
     },
     {
       "name": "privacy-legal",
@@ -37,19 +38,21 @@
       "name": "corporate-legal",
       "displayName": "Corporate Legal",
       "source": "./corporate-legal",
-      "description": "Runs M&A diligence at scale with cited tabular review, builds disclosure schedules and closing checklists, drafts board consents and minutes in house format, and tracks entity compliance deadlines across jurisdictions.",
+      "description": "Runs M&A diligence at scale with cited tabular review and jurisdiction-specific category overlays, builds disclosure schedules and closing checklists with the deal jurisdictions' regulatory map, drafts board consents and minutes in house format under the applicable companies law, and tracks entity compliance deadlines by jurisdiction and entity type.",
       "author": {
         "name": "Anthropic"
-      }
+      },
+      "version": "2.0.0"
     },
     {
       "name": "employment-legal",
       "displayName": "Employment Legal",
       "source": "./employment-legal",
-      "description": "Reviews hires and terminations for jurisdiction-specific risk flags, classifies workers against the controlling state test, tracks leave deadlines before they're missed, runs internal investigations, and drafts policies with state supplements where the law differs.",
+      "description": "Reviews hires and terminations against the applicable jurisdiction's labor law with computed end-of-service and compensation figures, classifies workers under the controlling test, tracks statutory leave deadlines before they're missed, runs internal investigations, and drafts policies with jurisdiction supplements where the law differs.",
       "author": {
         "name": "Anthropic"
-      }
+      },
+      "version": "2.0.0"
     },
     {
       "name": "regulatory-legal",

@@ -24,6 +24,25 @@ Before producing output, check where it's going. If the user has named a destina
 
 The business owner who asked for this contract doesn't want a legal memo. They want to know: can I sign it, what's the catch, and what do I need to do. This skill takes a completed review and turns it into that.
 
+### Step 0: Resolve the applicable jurisdiction
+
+1. **Read the practice profile's `## Jurisdiction` section.** It gives the primary jurisdiction code, the footprint list (other codes the practice operates in), the output-language preference, and whether local counsel is available for escalation. Codes are ISO 3166-1 alpha-3 lowercase (`ksa`, `gbr`, `fra`, `che`, `usa`). If the section is missing or still a placeholder, stop: "The practice profile has no jurisdiction. Run the cold-start interview; nothing in this skill can run against the wrong jurisdiction."
+2. **Determine the matter's jurisdiction(s).** Start from the primary code. Then read the matter facts: governing-law clause, seat of arbitration, place of employment, jurisdiction of incorporation, place of performance. If the facts point to a code not in the profile, add it for this matter and say so in the reviewer note. A matter may have more than one code (a contract governed by English law with a Saudi counterparty and Saudi performance is `gbr` + `ksa`).
+3. **Load the jurisdiction folder for each code.** The folder is `references/jurisdictions/<code>/` in this plugin (the same tree ships at the repo root and in every runtime adapter). Read `MANIFEST.md` first.
+   - If `populated` is not `yes`: **stop for that code.** Say: "Jurisdiction `<code>` (<name>) is registered but not populated: no reference files exist for it. I will not apply another jurisdiction's rules or model knowledge in its place. Options: (1) populate `references/jurisdictions/<code>/` (see README, 'How to add a jurisdiction'), (2) route this matter to local counsel, (3) tell me to proceed with the analysis limited to the populated jurisdictions in this matter, with every finding for `<code>` marked `[not populated — no rule applied]`." Wait for the answer. Never fall back silently.
+   - If the code is `usa`: there is no folder. Follow this skill's US path (the upstream doctrine and the upstream research connectors, CourtListener or Westlaw, with the upstream "no silent supplement" rule). Label findings `[usa]`.
+   - If `populated` is `yes`: read `INDEX.md`, then the instrument files this skill names in its "Jurisdiction files" list. A row tagged `[settled — last confirmed YYYY-MM-DD]` may be applied and cited by article. A row tagged `[model knowledge — verify]` may be applied only with that tag carried onto the finding. If a rule this skill needs is not in the files at all, do not supply it from memory: say what is missing, tag the gap `[no rule in <code> files — verify]`, and continue only with the rules that exist.
+4. **Multi-jurisdiction matters.** Run the relevant files side by side. Label every finding with its code in square brackets, `[ksa]`, `[gbr]`, `[usa]`, and never merge two jurisdictions' rules into one sentence. Where the codes conflict (a clause valid under one law and reducible under another), state both and flag `[review]` for the lawyer to decide which governs.
+5. **Research step (when a rule must be quoted or its currency checked).** Use the portal named in `MANIFEST.md` → `research_tool`. For `ksa`: `python3 scripts/fetch-law.py --portal boe --id <guid> --lang ar` (GUIDs in `SOURCES.md`), or `curl -sS https://laws.boe.gov.sa/BoeLaws/Laws/LawDetails/<guid>/1`; the built-in web-fetch tool rejects the portal's TLS chain. Quote the article, tag `[BOE — Arabic]` (or `[BOE — official English]` when quoting the translation), and check the status line and the "تعديلات المادة" block for amendments. If the fetch fails or the article is not found, apply the "no silent supplement" rule: report the failure and stop, or continue with the rule tagged `[model knowledge — verify]` only if the user says so.
+6. **Calendar and language.** Take the weekend, public-holiday, calendar (Hijri or Gregorian) and currency rules from `MANIFEST.md`. Compute every date and roll-back against that calendar, never against a Saturday/Sunday weekend or US federal holidays. Produce the deliverable in English; when the profile's output-language preference is bilingual, or the manifest's authoritative language is not English and counterparty-facing text is produced, add the authoritative-language rendering of the bottom line, the findings table, and any counterparty-facing text, using the spellings in the manifest's `output_language_rule`.
+7. **Header and disclaimer.** Prepend the manifest's `disclaimer` line under the work-product header for every deliverable that applies a non-`usa` jurisdiction. For `ksa`: "Arabic text is authoritative; English translations are for convenience; a licensed Saudi lawyer must review before reliance." with its Arabic rendering from the manifest.
+8. **Record in the reviewer note.** `Jurisdiction: <codes applied>; files: <list>; portal fetched: yes/no; unpopulated codes: <list or none>.`
+
+**Jurisdiction files this skill loads** (for each populated non-`usa` code resolved in Step 0):
+
+- `MANIFEST.md` — `disclaimer` (stays on the summary even when the work-product header is removed) and `output_language_rule` (the authoritative-language rendering of the two-minute answer).
+- `civil-transactions-law.md`, `personal-data-protection-law.md` (Arts. 35-36 for the size of the exposure), `arbitration-law.md`, `commercial-courts-law.md`, `enforcement-law.md` — Practical-effect column only, carrying the row's tag, and only to translate a finding the upstream review already made. This skill never applies a rule the review did not apply.
+
 ## Which side?
 
 The underlying review memo was run against either the sales-side or the purchasing-side playbook. Carry that framing through. A purchasing-side summary tells the business owner "here's what we're getting and what we agreed to give up"; a sales-side summary tells them "here's what we're selling and what we're on the hook for." Check which side the review was run on (it should be noted at the top of the review memo) and match the voice. If it's not obvious from the memo, ask the lawyer before summarizing.
@@ -39,7 +58,7 @@ Different audiences need different summaries:
 | **Procurement** | Price, renewal mechanics, approval routing | Liability cap structure |
 | **Department head (budget owner)** | Can their team use it, what happens if it breaks, cost | Indemnity scope |
 | **Finance** | Total cost of ownership, renewal price risk, off-balance-sheet commitments | Governing law |
-| **Security / IT** | Data handling, subprocessors, SOC 2, where data lives | Everything else |
+| **Security / IT** | Data handling, subprocessors, the assurance standard the profile names (SOC 2, ISO 27001, or the local standard recorded at cold-start), where data lives | Everything else |
 | **Executive sponsor** | Is this going to embarrass us, is legal a blocker | Details |
 
 Ask who this is for if it's not obvious from context.
@@ -58,6 +77,10 @@ The summary is:
 
 If the close needs a third paragraph, fold it into the checklist instead. Don't let the close grow into a fourth block.
 
+**Authoritative-language rendering (bilingual profiles).** When the profile `## Jurisdiction` → Output language is bilingual, or the stakeholder reads in the authoritative language of a code applied, add a rendering of the whole two-minute answer — verdict line, the two paragraphs, the checklist and the close — in that language directly after the English, using the spellings in the manifest's `output_language_rule` and the same plain register (no legal terms of art in either language). The rendering is exempt from the 200-word cap but is bound by the same content: it says nothing the English does not. When the profile says authoritative-language only, produce the summary in that language and keep the English verdict line. Amounts are written in `[currency]` from the profile.
+
+**Jurisdiction disclaimer stays.** The jurisdiction disclaimer line from the profile `## Jurisdiction` (for every code other than `usa`) sits under the work-product header and stays on the summary even when the header is removed for forwarding outside legal; it is the one line that tells the stakeholder which text of the contract governs and that a licensed local lawyer must review before reliance. Translate a finding's statutory position using only the Practical-effect column of the row the review cited, carrying its tag in the footer, and label it as "statutory default / mandatory / drafting point" the way `civil-transactions-law.md` asks; never add a rule the review did not apply.
+
 ### Scope of quote — discipline
 
 When quoting a contract clause (in the summary, in the "catch" paragraph, or in the checklist), quote the **full conditional sentence**, not a truncated version. A clause that reads "Except as expressly provided in the Order Form, renewal of promotional or one-time priced subscriptions resets to list price" means something different from "renewal resets to list price" — the truncation drops the condition and misrepresents what the term does.
@@ -70,6 +93,7 @@ Prepend the work-product header from `~/.claude/plugins/config/claude-for-legal/
 
 ```markdown
 [WORK-PRODUCT HEADER — per plugin config ## Outputs]
+[JURISDICTION DISCLAIMER LINE — from the profile ## Jurisdiction, for every code other than `usa`; keep it when the header is removed]
 <!-- Remove the header above if forwarding outside the legal-privileged circle (e.g., to a business stakeholder, counterparty, or vendor). Confirm the correct marking for your jurisdiction and matter before forwarding. -->
 
 **[Counterparty] [Agreement type]** — [READY TO SIGN | NEEDS CHANGES | BLOCKED]
@@ -113,6 +137,8 @@ Claiming a tracker entry exists when it does not is worse than omitting the reas
 | "Subprocessor list not disclosed" | "We don't know what other companies will have access to our data through them." |
 | "Data deletion within 30 days of termination" | "When we cancel, they delete our data within a month. Export anything you need before then." |
 | "SLA credits capped at 10% of monthly fee" | "If the service goes down, we get a small credit back. It won't cover the cost of the downtime to the business." |
+| "Penalty clause reducible under the civil code (`civil-transactions-law.md` Art. 179)" | "The fixed penalty in the contract is a ceiling, not a guaranteed amount — a court can cut it if the loss was smaller, and we can't contract around that." |
+| "Fine exposure under the data-protection law (`personal-data-protection-law.md` Art. 36)" | "If personal data is mishandled, the regulator can fine us up to [currency] [amount from the row] per breach, and the contract's cap doesn't change that." |
 
 ### What NOT to include
 
@@ -129,6 +155,7 @@ If the review has 🔴 or 🟠 issues, the summary still needs to be two paragra
 
 ```markdown
 [WORK-PRODUCT HEADER — per plugin config ## Outputs]
+[JURISDICTION DISCLAIMER LINE — from the profile ## Jurisdiction, for every code other than `usa`; keep it when the header is removed]
 <!-- Remove the header above if forwarding outside the legal-privileged circle. -->
 
 **[Counterparty] [Agreement type]** — NEEDS CHANGES

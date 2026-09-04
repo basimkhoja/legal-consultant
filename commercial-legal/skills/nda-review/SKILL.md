@@ -27,6 +27,30 @@ Most inbound NDAs are fine. A few have landmines. This skill sorts them in under
 
 ## Load the playbook first
 
+### Step 0: Resolve the applicable jurisdiction
+
+1. **Read the practice profile's `## Jurisdiction` section.** It gives the primary jurisdiction code, the footprint list (other codes the practice operates in), the output-language preference, and whether local counsel is available for escalation. Codes are ISO 3166-1 alpha-3 lowercase (`ksa`, `gbr`, `fra`, `che`, `usa`). If the section is missing or still a placeholder, stop: "The practice profile has no jurisdiction. Run the cold-start interview; nothing in this skill can run against the wrong jurisdiction."
+2. **Determine the matter's jurisdiction(s).** Start from the primary code. Then read the matter facts: governing-law clause, seat of arbitration, place of employment, jurisdiction of incorporation, place of performance. If the facts point to a code not in the profile, add it for this matter and say so in the reviewer note. A matter may have more than one code (a contract governed by English law with a Saudi counterparty and Saudi performance is `gbr` + `ksa`).
+3. **Load the jurisdiction folder for each code.** The folder is `references/jurisdictions/<code>/` in this plugin (the same tree ships at the repo root and in every runtime adapter). Read `MANIFEST.md` first.
+   - If `populated` is not `yes`: **stop for that code.** Say: "Jurisdiction `<code>` (<name>) is registered but not populated: no reference files exist for it. I will not apply another jurisdiction's rules or model knowledge in its place. Options: (1) populate `references/jurisdictions/<code>/` (see README, 'How to add a jurisdiction'), (2) route this matter to local counsel, (3) tell me to proceed with the analysis limited to the populated jurisdictions in this matter, with every finding for `<code>` marked `[not populated — no rule applied]`." Wait for the answer. Never fall back silently.
+   - If the code is `usa`: there is no folder. Follow this skill's US path (the upstream doctrine and the upstream research connectors, CourtListener or Westlaw, with the upstream "no silent supplement" rule). Label findings `[usa]`.
+   - If `populated` is `yes`: read `INDEX.md`, then the instrument files this skill names in its "Jurisdiction files" list. A row tagged `[settled — last confirmed YYYY-MM-DD]` may be applied and cited by article. A row tagged `[model knowledge — verify]` may be applied only with that tag carried onto the finding. If a rule this skill needs is not in the files at all, do not supply it from memory: say what is missing, tag the gap `[no rule in <code> files — verify]`, and continue only with the rules that exist.
+4. **Multi-jurisdiction matters.** Run the relevant files side by side. Label every finding with its code in square brackets, `[ksa]`, `[gbr]`, `[usa]`, and never merge two jurisdictions' rules into one sentence. Where the codes conflict (a clause valid under one law and reducible under another), state both and flag `[review]` for the lawyer to decide which governs.
+5. **Research step (when a rule must be quoted or its currency checked).** Use the portal named in `MANIFEST.md` → `research_tool`. For `ksa`: `python3 scripts/fetch-law.py --portal boe --id <guid> --lang ar` (GUIDs in `SOURCES.md`), or `curl -sS https://laws.boe.gov.sa/BoeLaws/Laws/LawDetails/<guid>/1`; the built-in web-fetch tool rejects the portal's TLS chain. Quote the article, tag `[BOE — Arabic]` (or `[BOE — official English]` when quoting the translation), and check the status line and the "تعديلات المادة" block for amendments. If the fetch fails or the article is not found, apply the "no silent supplement" rule: report the failure and stop, or continue with the rule tagged `[model knowledge — verify]` only if the user says so.
+6. **Calendar and language.** Take the weekend, public-holiday, calendar (Hijri or Gregorian) and currency rules from `MANIFEST.md`. Compute every date and roll-back against that calendar, never against a Saturday/Sunday weekend or US federal holidays. Produce the deliverable in English; when the profile's output-language preference is bilingual, or the manifest's authoritative language is not English and counterparty-facing text is produced, add the authoritative-language rendering of the bottom line, the findings table, and any counterparty-facing text, using the spellings in the manifest's `output_language_rule`.
+7. **Header and disclaimer.** Prepend the manifest's `disclaimer` line under the work-product header for every deliverable that applies a non-`usa` jurisdiction. For `ksa`: "Arabic text is authoritative; English translations are for convenience; a licensed Saudi lawyer must review before reliance." with its Arabic rendering from the manifest.
+8. **Record in the reviewer note.** `Jurisdiction: <codes applied>; files: <list>; portal fetched: yes/no; unpopulated codes: <list or none>.`
+
+**Jurisdiction files this skill loads** (for each populated non-`usa` code resolved in Step 0; article numbers are the `ksa` rows that exist today):
+
+- `civil-transactions-law.md` — Art. 113 (confidentiality and dispute-resolution clauses survive termination by statute), Art. 173 (no exclusion of liability for fraud or gross fault; tort not excludable), Arts. 178-179 (liquidated damages for breach of confidence: reduction, no-harm defence, no contracting out), Art. 169 (non-solicit and non-compete as obligations not to do, subject to public order), Art. 41 (bad-faith negotiation and deliberate non-disclosure), Arts. 305-306 (no contractual shortening of limitation), Arts. 40, 96 (adhesion terms).
+- `labor-law.md` — Art. 83 when the counterparty or a restricted person is an individual worker: non-compete and post-termination confidentiality must be written and specific as to time, place and type of work; non-compete capped at two years; one-year limitation from discovery.
+- `personal-data-protection-law.md` — Art. 41 (statutory survival of confidentiality for personal data), Art. 1 (personal data inside "confidential information"), Art. 8 (if the NDA in substance permits processing on the discloser's behalf).
+- `arbitration-law.md` — Law Arts. 2, 9, 10, 28-29 for an arbitration clause inside the NDA.
+- `commercial-courts-law.md` — Arts. 6, 9-12, 16 for a court-jurisdiction clause.
+- `enforcement-law.md` — Arts. 36-37 (enforceability of injunctive-type obligations), with the effective-date gate stated in that file.
+- `electronic-transactions-law.md` — Arts. 4(3), 5, 14 for electronic execution.
+
 **Which side?** Before applying the playbook, determine which side the company is on for this NDA. Usually obvious from the context: if the counterparty is a vendor or partner evaluating your product, you're sales-side; if you're evaluating theirs, you're purchasing-side. Mutual NDAs still have a side — whose paper is it, and which direction is the evaluation running. If it's not obvious, ask. Read the matching playbook section (`### Sales-side playbook` or `### Purchasing-side playbook`) from the config. Note which side in the output so the reviewer knows which playbook was applied. If the matching side is `[Not configured]`, stop and tell the user to run `/commercial-legal:cold-start-interview --side <side>` before this triage can proceed.
 
 **Before triaging anything, read `~/.claude/plugins/config/claude-for-legal/commercial-legal/CLAUDE.md` → `## Playbook` → the matching side → `NDA triage positions`.** That section is the source of truth for what makes an NDA GREEN, YELLOW, or RED for *this* team on *this* side. This skill does not ship with default positions on NDA terms — the law, the market, and each team's risk tolerance vary too much for hardcoded defaults to be safe.
@@ -36,6 +60,26 @@ If `~/.claude/plugins/config/claude-for-legal/commercial-legal/CLAUDE.md` doesn'
 > Your playbook doesn't cover [term — e.g., "residuals clauses," "survival period," "one-way NDAs where you're the receiver"]. What's your default position — when should this be GREEN, when YELLOW, when RED? I'll add it to `~/.claude/plugins/config/claude-for-legal/commercial-legal/CLAUDE.md` so the next review is consistent.
 
 Then record the answer in `~/.claude/plugins/config/claude-for-legal/commercial-legal/CLAUDE.md` and proceed with the triage using the new position.
+
+### Enforceability check — runs before any bucket is issued
+
+The playbook positions are the team's preferences; whether a clause is enforceable is a question for the jurisdiction resolved in Step 0. This check runs before the triage, and GREEN cannot be issued until it has run for every code applied. Label findings by code when more than one applies.
+
+**When the applicable code is populated and not `usa`:** apply the rows in the "Jurisdiction files this skill loads" block, quoting the article and carrying the row's tag verbatim. The article numbers are the `ksa` rows that exist today.
+
+1. **Confidentiality survival** → `civil-transactions-law.md` Art. 113: confidentiality and dispute-resolution clauses survive termination by statute, so a missing survival clause is YELLOW (drafting point), not RED; an express "does not survive" clause is the contrary agreement the article permits and is flagged. Where the NDA covers personal data, `personal-data-protection-law.md` Art. 41 adds statutory survival for anyone who processed the data.
+2. **Limitation and exclusion of liability inside the NDA** → `civil-transactions-law.md` Art. 173: an exclusion of liability for deliberate or grossly negligent disclosure is void; tort liability cannot be excluded. Flag any cap that does not carve out fraud and gross fault.
+3. **Liquidated damages or penalties for breach of confidence** → `civil-transactions-law.md` Arts. 178-179: reducible by the court, not due if no harm is proved, no contracting out; "payable regardless of loss" language is void and the NDA is YELLOW on that clause. Any recomputed exposure number carries `[computed — civil-transactions-law.md Arts. 178-179, settled <date>; inputs: …]`.
+4. **Non-compete and non-solicit** → when the restricted person is an individual (a consultant, an employee named as a party, a sole trader), `labor-law.md` Art. 83: the restraint must be written and specific as to time, place and type of work; a non-compete may not exceed two years; the employer's claim is limited to one year from discovery. A clause failing any element is YELLOW at least and RED if the playbook says so. Between companies, the covenant is an obligation not to do under `civil-transactions-law.md` Art. 169, enforceable subject to public order (`[model knowledge — verify]`); there is no statutory cap in the files, so the playbook governs and the tag travels onto the finding.
+5. **Fee-shifting (attorneys' fees)** → the `ksa` files carry no row on contractual fee-shifting or on the default allocation of costs. Report `[no rule in <code> files — verify]`, apply the playbook position only, and do not import the US "American rule" premise or a loser-pays rule from memory. For another populated code, cite the row if its file has one.
+6. **Pre-contract disclosure and bad faith** → `civil-transactions-law.md` Art. 41 when the NDA governs an evaluation or negotiation: deliberate non-disclosure of a material fact is actionable regardless of a non-reliance clause.
+7. **Governing law and forum** → `arbitration-law.md` Law Arts. 2, 9, 10, 28-29 for an arbitration clause (form, government-entity approval, seat and language); `commercial-courts-law.md` Arts. 6, 9-12, 16 for a court clause; `enforcement-law.md` Arts. 36-37 for whether an injunctive-type obligation can be enforced, with the effective-date gate stated in that file. A foreign governing law with local performance is `[no rule in <code> files — verify]` (no conflict-of-laws chapter in the file) and is flagged `[review]`.
+8. **Electronic execution** → `electronic-transactions-law.md` Arts. 4(3), 5, 14(1): a platform-signed NDA is valid between the parties; never state that a platform's signatures carry the Art. 14(3) presumptions.
+9. **Adhesion terms** → `civil-transactions-law.md` Arts. 40, 96 where the NDA is the counterparty's non-negotiable standard form (`[model knowledge — verify]` on B2B application).
+
+If a clause exists and the file is silent, tag `[no rule in <code> files — verify]` and do not supply the rule from memory. If a row is tagged `[model knowledge — verify]`, carry the tag and mark the item for local counsel. If an article must be quoted or its currency checked, fetch it from the portal named in the manifest (`python3 scripts/fetch-law.py --portal boe --id <guid> --lang ar`, GUIDs in `references/jurisdictions/<code>/SOURCES.md`; the built-in web-fetch tool rejects the portal's TLS chain), tag `[BOE — Arabic]` or `[BOE — official English]`; if the fetch fails, say so and stop that item rather than continue from memory.
+
+**When the applicable code is `usa`:** this triage applies the governing-law and restrictive-covenant positions recorded in `~/.claude/plugins/config/claude-for-legal/commercial-legal/CLAUDE.md`. Legal rules (enforceability of non-competes, non-solicits, fee-shifting, choice of law) vary materially by jurisdiction. If the NDA involves a jurisdiction outside the team's configured posture, flag it in the output and note that the triage may not transfer as written; use the upstream research connectors for any rule that must be cited and tag it `[jurisdiction — verify]`.
 
 ## Scope check
 
@@ -61,14 +105,17 @@ The NDA satisfies every position in the team's playbook, and no term triggers a 
 
 Do not route to signature on defaults. YELLOW is the right call when positions are missing — it surfaces the NDA to a human who can decide.
 
+**GREEN is gated on the enforceability check.** GREEN may be issued only when the enforceability check above has run for every code applied and produced no finding: every item either passed against a cited row or was not present in the NDA. Any item tagged `[no rule in <code> files — verify]`, `[model knowledge — verify]`, or `[not populated — no rule applied]` that bears on a clause actually in the NDA makes the bucket YELLOW, with the item listed under "Flagged items" so the approver sees what could not be confirmed. An unpopulated code is the Step 0 hard stop: no bucket is issued for that code.
+
 **Output:**
 
 Prepend the work-product header from `~/.claude/plugins/config/claude-for-legal/commercial-legal/CLAUDE.md` `## Outputs` (it differs by user role — see `## Who's using this`).
 
 ```markdown
 [WORK-PRODUCT HEADER — per plugin config ## Outputs]
+[JURISDICTION DISCLAIMER LINE — from the profile ## Jurisdiction, for every code other than `usa`]
 
-## NDA Triage: [Counterparty]
+## NDA Triage: [Counterparty] — [codes applied]
 
 GREEN — route to signature
 
@@ -103,8 +150,9 @@ Prepend the work-product header from `~/.claude/plugins/config/claude-for-legal/
 
 ```markdown
 [WORK-PRODUCT HEADER — per plugin config ## Outputs]
+[JURISDICTION DISCLAIMER LINE — from the profile ## Jurisdiction, for every code other than `usa`]
 
-## NDA Triage: [Counterparty]
+## NDA Triage: [Counterparty] — [codes applied]
 
 YELLOW — flag for [approver name from `~/.claude/plugins/config/claude-for-legal/commercial-legal/CLAUDE.md`]
 
@@ -142,8 +190,9 @@ Prepend the work-product header from `~/.claude/plugins/config/claude-for-legal/
 
 ```markdown
 [WORK-PRODUCT HEADER — per plugin config ## Outputs]
+[JURISDICTION DISCLAIMER LINE — from the profile ## Jurisdiction, for every code other than `usa`]
 
-## NDA Triage: [Counterparty]
+## NDA Triage: [Counterparty] — [codes applied]
 
 RED — do not submit, talk to legal first
 
@@ -176,11 +225,9 @@ Default to the smallest edit that achieves the playbook position:
 
 When in doubt, smaller. A client who receives a surgical redline trusts that you read carefully. A client who receives a wholesale replacement wonders whether you read at all.
 
-## Jurisdiction assumption
-
-This triage applies the governing-law and restrictive-covenant positions recorded in `~/.claude/plugins/config/claude-for-legal/commercial-legal/CLAUDE.md`. Legal rules (enforceability of non-competes, non-solicits, fee-shifting, choice of law) vary materially by jurisdiction. If the NDA involves a jurisdiction outside the team's configured posture, flag it in the output and note that the triage may not transfer as written.
-
 ## Output rules
+
+**Header, disclaimer, language.** Every bucket's output carries the work-product header from the profile `## Outputs` and, directly under it, for every code applied other than `usa`, the jurisdiction disclaimer line from the profile `## Jurisdiction` (the manifest's `disclaimer`, English and authoritative language); the line stays on the output when it is forwarded. Apply the bilingual house-style rule from the profile `## Outputs`: when the output language is bilingual, or the triage carries counterparty-facing text (a proposed strike or replacement phrase) in a jurisdiction whose authoritative language is not English, add the authoritative-language rendering of the bucket line (GREEN / YELLOW / RED and the one-line reason), the checks table, and every counterparty-facing edit, using the spellings in the manifest's `output_language_rule`. The reviewer note carries the Step 0 record line: `Jurisdiction: <codes applied>; files: <list>; portal fetched: yes/no; unpopulated codes: <list or none>`.
 
 **Complexity filter:** If addressing an issue would require drafting new
 language, restructuring a clause, or inserting substantive new
@@ -242,15 +289,15 @@ A residuals clause lets the receiving party use information retained in unaided 
 
 ### Term and survival
 
-Check the initial term length, the post-term survival period for confidentiality obligations, and whether trade secrets are carved out with longer protection. Apply the team's position from `~/.claude/plugins/config/claude-for-legal/commercial-legal/CLAUDE.md`. If the playbook doesn't cover one of these, ask.
+Check the initial term length, the post-term survival period for confidentiality obligations, and whether trade secrets are carved out with longer protection. Apply the team's position from `~/.claude/plugins/config/claude-for-legal/commercial-legal/CLAUDE.md`. If the playbook doesn't cover one of these, ask. For a populated non-`usa` code, the statutory survival row (enforceability check item 1) decides how a missing survival clause is bucketed; where an individual is bound, `labor-law.md` Art. 83(2) requires post-termination confidentiality to state time, place and type of work, so an indefinite clause binding an individual is flagged.
 
 ### Restrictive covenants
 
-Check for non-solicits (employee, customer), non-competes, exclusivity, and any restriction on who else the receiving party can engage with. Apply `~/.claude/plugins/config/claude-for-legal/commercial-legal/CLAUDE.md`. If the playbook is silent, ask — restrictive covenants are jurisdiction-sensitive and the team's posture matters.
+Check for non-solicits (employee, customer), non-competes, exclusivity, and any restriction on who else the receiving party can engage with. Apply `~/.claude/plugins/config/claude-for-legal/commercial-legal/CLAUDE.md`. If the playbook is silent, ask — restrictive covenants are jurisdiction-sensitive and the team's posture matters. The enforceability rule for the governing law comes from the enforceability check, item 4 (for a populated non-`usa` code: `labor-law.md` Art. 83 for an individual, `civil-transactions-law.md` Art. 169 between companies with its tag; for `usa`: the upstream branch), never from memory.
 
 ### Attorneys' fees
 
-Check for fee-shifting provisions and whether they are mutual, one-sided, or prevailing-party. Apply `~/.claude/plugins/config/claude-for-legal/commercial-legal/CLAUDE.md`.
+Check for fee-shifting provisions and whether they are mutual, one-sided, or prevailing-party. Apply `~/.claude/plugins/config/claude-for-legal/commercial-legal/CLAUDE.md`. The weight of this check depends on the default cost rule of the governing law, which is enforceability-check item 5: for `ksa` the files carry no row, so the item is reported as `[no rule in <code> files — verify]` and the playbook position alone decides the bucket; do not assume the US premise that fees shift only by contract.
 
 ### Backup and archival carveout
 
@@ -258,7 +305,7 @@ Check whether the destruction/return clause includes an exception for standard b
 
 ### Governing law
 
-Per `~/.claude/plugins/config/claude-for-legal/commercial-legal/CLAUDE.md` `## Playbook` → `Governing law and venue`.
+Per `~/.claude/plugins/config/claude-for-legal/commercial-legal/CLAUDE.md` `## Playbook` → `Governing law and venue` (preferred / acceptable / escalate / never, forum, arbitration institution and seat, language of proceedings and prevailing contract language). Enforceability of the clause as written is enforceability-check item 7. If the clause points to a code Step 0 did not resolve, add it and run Step 0 item 3 for it before bucketing; an unpopulated code stops the triage for that code.
 
 ## Counterparty context
 

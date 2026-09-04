@@ -1,18 +1,20 @@
 ---
 name: written-consent
 description: >
-  Draft a unanimous written consent of the board or a committee in house format,
-  with precedent search from the consents repository. Handles multi-resolution
-  consents, director conflict flags, state-law notice requirements, and signatory
-  tracking, with a built-in scope warning for major one-off actions. Use when
-  user says "written consent", "unanimous consent", "board consent", "consent
-  in lieu", "UWC", or describes an action needing board approval without a meeting.
+  Draft a written consent or resolution by circulation of the board or a
+  committee in house format, with precedent search from the consents repository.
+  Handles multi-resolution consents, director conflict flags, the jurisdiction's
+  notice and majority rules, and signatory tracking, with a scope warning for
+  major one-off actions. Use when user says "written consent", "unanimous
+  consent", "board consent", "consent in lieu", "UWC", "resolution by
+  circulation", or describes an action needing board approval without a meeting.
 argument-hint: "[describe the action needing board approval]"
 ---
 
 # /written-consent
 
-1. Load `~/.claude/plugins/config/claude-for-legal/corporate-legal/CLAUDE.md` → Board & Secretary (consents repository, resolution language, state of incorporation, board composition).
+0. Run Step 0 (resolve the applicable jurisdiction) below; the jurisdiction of incorporation of the entity passing the resolution decides Step 4.
+1. Load `~/.claude/plugins/config/claude-for-legal/corporate-legal/CLAUDE.md` → `## Jurisdiction`, `## Company profile` (legal form, listed-company regulator) and Board & Secretary (consents repository, resolution language, board composition).
 2. Use the workflow below.
 3. Identify the action and classify (routine / review-flag).
 4. If review-flag: show outside counsel warning and confirm before proceeding.
@@ -30,7 +32,7 @@ argument-hint: "[describe the action needing board approval]"
 
 ## Purpose
 
-Most routine board approvals don't need a meeting. Officer appointments, equity grants, bank authorizations, contract approvals above the officer threshold, intercompany arrangements — these happen by unanimous written consent. This skill drafts them quickly in your house format, finds the prior consent that's closest to what you need, and flags the actions where you should be getting outside counsel eyes before anyone signs.
+Most routine board approvals don't need a meeting. Officer appointments, equity grants, bank authorizations, contract approvals above the officer threshold, intercompany arrangements — these happen by written consent (under `usa`, the unanimous written consent in lieu of a meeting; under a populated non-`usa` code, the resolution by circulation the jurisdiction's companies law provides, with its own majority, notice and register conditions). This skill drafts them quickly in your house format, finds the prior consent that's closest to what you need, and flags the actions where you should be getting outside counsel eyes before anyone signs.
 
 ## Scope warning — read before drafting
 
@@ -75,9 +77,10 @@ Do not proceed to Step 1 or any drafting under this gate without an explicit res
 - `~/.claude/plugins/config/claude-for-legal/corporate-legal/CLAUDE.md` → `## Board & Secretary`:
   - Consents repository location
   - House resolution language
-  - State of incorporation (for notice requirements)
+  - Jurisdiction code of incorporation and local entity type of the entity passing the resolution (from `## Company profile` or the `## Entity Management` entity table) — these drive the notice, majority and form questions in Step 4; whether the entity is listed (from `## Company profile` → listed-company regulator)
   - Board composition (for signatory list)
   - Written consents — scope and any limits
+  - The entity's articles of association / bylaws if on file — Step 4 needs them; if they are not available, the skill says the statutory default is being applied and that the articles may set a higher threshold
 
 ### No-precedent hard stop
 
@@ -100,6 +103,30 @@ Do NOT proceed without an explicit response choosing one of those two paths. Dra
 
 ---
 
+### Step 0: Resolve the applicable jurisdiction
+
+1. **Read the practice profile's `## Jurisdiction` section.** It gives the primary jurisdiction code, the footprint list (other codes the practice operates in), the output-language preference, and whether local counsel is available for escalation. Codes are ISO 3166-1 alpha-3 lowercase (`ksa`, `gbr`, `fra`, `che`, `usa`). If the section is missing or still a placeholder, stop: "The practice profile has no jurisdiction. Run the cold-start interview; nothing in this skill can run against the wrong jurisdiction."
+2. **Determine the matter's jurisdiction(s).** Start from the primary code. Then read the matter facts: governing-law clause, seat of arbitration, place of employment, jurisdiction of incorporation, place of performance. If the facts point to a code not in the profile, add it for this matter and say so in the reviewer note. A matter may have more than one code (a contract governed by English law with a Saudi counterparty and Saudi performance is `gbr` + `ksa`).
+3. **Load the jurisdiction folder for each code.** The folder is `references/jurisdictions/<code>/` in this plugin (the same tree ships at the repo root and in every runtime adapter). Read `MANIFEST.md` first.
+   - If `populated` is not `yes`: **stop for that code.** Say: "Jurisdiction `<code>` (<name>) is registered but not populated: no reference files exist for it. I will not apply another jurisdiction's rules or model knowledge in its place. Options: (1) populate `references/jurisdictions/<code>/` (see README, 'How to add a jurisdiction'), (2) route this matter to local counsel, (3) tell me to proceed with the analysis limited to the populated jurisdictions in this matter, with every finding for `<code>` marked `[not populated — no rule applied]`." Wait for the answer. Never fall back silently.
+   - If the code is `usa`: there is no folder. Follow this skill's US path (the upstream doctrine and the upstream research connectors, CourtListener or Westlaw, with the upstream "no silent supplement" rule). Label findings `[usa]`.
+   - If `populated` is `yes`: read `INDEX.md`, then the instrument files this skill names in its "Jurisdiction files" list. A row tagged `[settled — last confirmed YYYY-MM-DD]` may be applied and cited by article. A row tagged `[model knowledge — verify]` may be applied only with that tag carried onto the finding. If a rule this skill needs is not in the files at all, do not supply it from memory: say what is missing, tag the gap `[no rule in <code> files — verify]`, and continue only with the rules that exist.
+4. **Multi-jurisdiction matters.** Run the relevant files side by side. Label every finding with its code in square brackets, `[ksa]`, `[gbr]`, `[usa]`, and never merge two jurisdictions' rules into one sentence. Where the codes conflict (a clause valid under one law and reducible under another), state both and flag `[review]` for the lawyer to decide which governs.
+5. **Research step (when a rule must be quoted or its currency checked).** Use the portal named in `MANIFEST.md` → `research_tool`. For `ksa`: `python3 scripts/fetch-law.py --portal boe --id <guid> --lang ar` (GUIDs in `SOURCES.md`), or `curl -sS https://laws.boe.gov.sa/BoeLaws/Laws/LawDetails/<guid>/1`; the built-in web-fetch tool rejects the portal's TLS chain. Quote the article, tag `[BOE — Arabic]` (or `[BOE — official English]` when quoting the translation), and check the status line and the "تعديلات المادة" block for amendments. If the fetch fails or the article is not found, apply the "no silent supplement" rule: report the failure and stop, or continue with the rule tagged `[model knowledge — verify]` only if the user says so.
+6. **Calendar and language.** Take the weekend, public-holiday, calendar (Hijri or Gregorian) and currency rules from `MANIFEST.md`. Compute every date and roll-back against that calendar, never against a Saturday/Sunday weekend or US federal holidays. Produce the deliverable in English; when the profile's output-language preference is bilingual, or the manifest's authoritative language is not English and counterparty-facing text is produced, add the authoritative-language rendering of the bottom line, the findings table, and any counterparty-facing text, using the spellings in the manifest's `output_language_rule`.
+7. **Header and disclaimer.** Prepend the manifest's `disclaimer` line under the work-product header for every deliverable that applies a non-`usa` jurisdiction. For `ksa`: "Arabic text is authoritative; English translations are for convenience; a licensed Saudi lawyer must review before reliance." with its Arabic rendering from the manifest.
+8. **Record in the reviewer note.** `Jurisdiction: <codes applied>; files: <list>; portal fetched: yes/no; unpopulated codes: <list or none>.`
+
+**Jurisdiction files this skill loads:**
+
+- `references/jurisdictions/<code>/MANIFEST.md` — authoritative language, disclaimer, research tool (Step 0; Step 5).
+- `references/jurisdictions/<code>/companies-law.md` — resolutions by circulation, majorities, minutes register, electronic assemblies and voting (Step 1 conflicts; Step 3 template; Step 4). For `ksa`: Art. 82 (JSC board circulation), Art. 83 (board minutes register), Arts. 100-101 (unlisted JSC shareholders by circulation), Art. 149 (simplified JSC — articles only), Art. 166 (LLC written vote, > 50% of capital), Art. 172 (LLC ≥ 75% for amendments; unanimity items), Art. 165(5) (LLC minutes register), Regs Art. 63 (manager removal), Arts. 98, 150, 157 (single-owner written decisions), Art. 71 (interest disclosure and abstention), Art. 84 with Regs Arts. 24-30 (electronic participation and voting), Art. 7 (Arabic articles).
+- `references/jurisdictions/<code>/corporate-governance-regulations.md` — listed companies only (Step 4). For `ksa`: Companies Law Art. 82 as applied to a listed JSC board, CGR Art. 42 (conflicted directors excluded from the count), Arts. 28(14)-(15) (interest disclosure), the rule that a listed company's general assembly cannot resolve by circulation (Companies Law Arts. 100-101 are unlisted-only).
+- `references/jurisdictions/<code>/electronic-transactions-law.md` — e-signature validity (Step 3 counterparts clause; Step 4). For `ksa`: Art. 5 and Art. 14(1) (validity), Art. 14(3)-(4) (presumptions only for certified signatures), Art. 3 (excluded instruments), Art. 4(2) (state-entity counterparties), the practice-note row on notarised or Ministry-filed resolutions (`[model knowledge — verify]`).
+- `references/jurisdictions/<code>/civil-transactions-law.md` — note only: juristic personality and representative authority (Arts. 17-18, 87-93); the companies-law file governs.
+
+---
+
 ## Step 1: Identify the action
 
 Ask the user what action the board needs to approve. Gather:
@@ -108,7 +135,7 @@ Ask the user what action the board needs to approve. Gather:
 - **Any supporting detail?** For example: the name of the officer being appointed, the grant amount and price for an equity grant, the counterparty and contract value for a contract approval.
 - **Effective date:** Today, or a specific date?
 - **Signatories:** Full board, or a specific committee? If the `~/.claude/plugins/config/claude-for-legal/corporate-legal/CLAUDE.md` written-consent scope says certain actions require a meeting rather than consent, flag it now.
-- **Any director conflict?** Does any director have a material interest in the action being approved? If yes: flag it. The conflicted director may still be able to sign depending on state law and the nature of the conflict, but the consent should disclose it and the user should confirm.
+- **Any director conflict?** Does any director have a material interest in the action being approved? If yes: flag it. Whether the conflicted director may still sign, and whether the director counts toward the majority, depends on the applicable jurisdiction file and the nature of the conflict: for a populated non-`usa` code, apply the file's rows (for `ksa`: `companies-law.md` Art. 71 — disclosure recorded and abstention from the vote; Art. 27 with Regs Arts. 16-17 — assembly authorisation above the thresholds; for a listed JSC, `corporate-governance-regulations.md` Art. 42 — the conflicted director is excluded from the count, and Art. 28(14)-(15)); for `usa`, state law. The consent should disclose it and the user should confirm.
 
 ### Action classification
 
@@ -168,7 +195,70 @@ Extract the format from the seed consents in `~/.claude/plugins/config/claude-fo
 
 ## Step 3: Draft the consent
 
-Use the house format. The structure below is the standard — adapt to match the precedent or seed format exactly.
+Use the house format. The precedent or seed format controls; the fallback structures below are used only when the user has chosen "draft from a generic template anyway" under the no-precedent hard stop, and the one that applies is chosen by the jurisdiction code resolved in Step 0. Run Step 4 before finalising either: the majority statement, the statutory citation and the signature clause in the draft are variables Step 4 resolves.
+
+### When the applicable code is a populated non-`usa` code
+
+The fallback is a bilingual circular resolution. It cites the article of the jurisdiction's companies law that permits resolutions by circulation for this body and entity type, and the clause of the articles of association that adopts it; it states the majority actually obtained against the majority the file requires; and it carries the register-entry and ratification notes the file requires. The Arabic heading for `ksa` is قرار بالتمرير; the Arabic rendering of the operative text is produced under the bilingual house-style rule in the plugin `CLAUDE.md` `## Outputs`, using the manifest's spellings, and the disclaimer line from the profile sits under the work-product header on the drafting notes (never on the resolution itself, which is a corporate record).
+
+```
+[AUTHORITATIVE-LANGUAGE HEADING — for ksa: قرار بالتمرير]
+RESOLUTION BY CIRCULATION
+[OF THE BOARD OF DIRECTORS / OF THE PARTNERS / OF THE [COMMITTEE NAME]]
+OF [COMPANY NAME] ([local entity type], [registry number], [jurisdiction code])
+
+[Date — Gregorian, and Hijri where the manifest's calendar row says official dates are Hijri]
+
+The undersigned, being [all / N of M] of the [members of the Board of Directors /
+partners representing [X]% of the capital / members of the [Committee]] of
+[Company Name], a [local entity type] registered under [registry number]
+(the "Company"), adopt the following resolution by circulation pursuant to
+[Article N of the [Companies Law — cite the row resolved in Step 4, e.g. for
+ksa: Companies Law Art. 82 (board of a JSC) / Art. 166 (partners of an LLC) /
+Arts. 100-101 (shareholders of an unlisted JSC) / Art. 149 (simplified JSC,
+articles only)]] and [Clause N of the Company's articles of association],
+[without a meeting, no member having requested in writing that a meeting be held].
+
+[AGENDA ITEM / ACTION HEADING — if multiple resolutions]
+
+WHEREAS, [background recital — one or two sentences]; and
+
+RESOLVED, that [the specific action being approved, in precise language —
+name names, state amounts in the profile currency, reference the specific
+agreement or instrument];
+
+RESOLVED FURTHER, that [implementing resolution — the specific officers /
+the manager authorised to sign, within the powers registered in the
+commercial register];
+
+RESOLVED FURTHER, that this resolution shall be [entered in the minutes
+register / tabled at the next meeting of the board for ratification — per the
+row resolved in Step 4, e.g. for ksa: Art. 83 register and Art. 82 tabling
+for a JSC board; Art. 165(5) register for an LLC].
+
+[Repeat WHEREAS / RESOLVED block for each additional action]
+
+Majority statement: approved by [N of M members / partners holding [X]% of
+the capital], the requirement being [majority of all members / > 50% of the
+capital / ≥ 75% of the capital / unanimity — per the file row and the
+articles, cited].
+
+Signature and counterparts clause: [per the electronic-transactions row
+resolved in Step 4 — for ksa: signatures in electronic form are valid
+between the parties under Electronic Transactions Law Arts. 5 and 14(1);
+where the resolution must be notarised or filed with the Ministry of
+Commerce, the form is [model knowledge — verify] and is flagged, not asserted].
+
+[SIGNATURE BLOCKS — one per signatory, name in both languages where the
+profile is bilingual]
+
+_______________________________
+[Name]
+[Capacity — director / partner / committee member]
+Date: _______________
+```
+
+### When the applicable code is `usa`
 
 ```
 UNANIMOUS WRITTEN CONSENT
@@ -233,19 +323,42 @@ Date: _______________
 
 ---
 
-## Step 4: Confirm the consent rules for the state of incorporation
+## Step 4: Confirm the consent rules for the jurisdiction of incorporation
 
-Check the state of incorporation in `~/.claude/plugins/config/claude-for-legal/corporate-legal/CLAUDE.md`. Research the written-consent requirements for that state before drafting:
+Take the jurisdiction code and local entity type of the entity passing the resolution (Step 0; `## Company profile` / entity table). The five questions are the same in every jurisdiction; where the answers come from differs:
 
 - Is unanimity required for a board written consent, or is a lower threshold permitted?
 - Is notice to non-signatory directors required? On what timing?
-- Is notice to non-signatory stockholders required (for stockholder consents)? On what timing?
+- Is notice to non-signatory stockholders / partners required (for owner-level consents)? On what timing?
 - What form of signature is valid (wet ink, electronic, counterparts)?
-- Does the charter or bylaws override any default rule — e.g., a higher signature threshold, a different notice window, a restriction on which actions can be taken by consent?
+- Does the charter, bylaws or articles override any default rule — e.g., a higher signature threshold, a different notice window, a restriction on which actions can be taken by consent?
 
-Cite the controlling statute section and any charter/bylaw provisions relied on. Verify currency — state corporate codes are amended regularly. Flag uncertainty for attorney verification rather than stating a rule you haven't confirmed.
+The answers become two variables the output carries: **signature threshold** (replacing "unanimous consent required" in the checklist) and **jurisdiction rule** (replacing the "State law notice" line). Both name the file and article, or the statute section, they came from.
 
-If `~/.claude/plugins/config/claude-for-legal/corporate-legal/CLAUDE.md` records a house position on any of these questions, apply it and note the legal backstop being relied on. Add a short "State-law notice" block to the output summarizing what you confirmed (or flagged) so the user isn't left wondering.
+### When the applicable code is a populated non-`usa` code
+
+Answer the questions only from `references/jurisdictions/<code>/companies-law.md` (and, for a listed company, `corporate-governance-regulations.md`), and the signature question from `electronic-transactions-law.md`. Apply the row for this body and this entity type and no other; cite the article and carry the row's tag. For `ksa` the rows are:
+
+- **Board of a JSC** — `companies-law.md` Art. 82: resolutions by circulation are for urgent matters only, circulated to all members, and fail if any member requests in writing that the board meet; they pass with the approval of a majority of all the board's members (not merely of those responding) unless the articles require more; they are tabled at the next board meeting for ratification. Minutes and register: Art. 83. For a listed JSC add `corporate-governance-regulations.md`: CGR Art. 42 excludes the conflicted director from the count. The "urgent matter" condition is a `[review]` for the lawyer — record why the matter qualifies.
+- **Shareholders of an unlisted JSC** — Arts. 100-101: only if the articles allow it, on the chairman's proposal, circulated to all shareholders, unless a shareholder requests a meeting in writing; > 50% of all voting rights for ordinary decisions and ≥ 75% for the matters an extraordinary assembly decides; election and removal of directors, appointment and removal of the auditor, and review of the financial statements always require a meeting; entered in the register. **For a listed company this route does not exist** (Arts. 100-101 are unlisted-only, per `corporate-governance-regulations.md`): refuse to draft a general-assembly written resolution for a listed company, say why, and point to the assembly route.
+- **Simplified JSC** — Art. 149: the articles alone govern; there is no statutory fallback. If the articles are not on file, stop: "The simplified JSC's articles decide whether and how a resolution by circulation is valid; there is no statutory default to apply. Paste the articles or the relevant clause."
+- **Partners of an LLC** — Art. 166: written vote circulated to the partners; > 50% of the capital, with the second-round meeting rule if the majority is not reached; Art. 172: ≥ 75% of the capital for amendments to the articles, and the items that need unanimity; Art. 165(5): entered in the minutes register; Regs Art. 63: manager removal at > 50%.
+- **Single-owner entities** — Arts. 98, 150, 157: written decisions entered in the register.
+- **Electronic assemblies and voting** — Art. 84 with Regs Arts. 24-30 for assemblies held or voted by technology; Art. 83 allows electronic signature and recording of board minutes.
+- **Conflicted directors** — Art. 71 (disclosure and abstention); CGR Art. 42 for a listed JSC.
+- **Signature form** — `electronic-transactions-law.md` Art. 5 and Art. 14(1): an electronic signature is valid between the parties; Art. 14(3)-(4): the statutory presumptions attach only to a signature under a licensed certificate, so a platform-signed consent is valid but carries no presumption unless certified; Art. 3: excluded instruments; where the resolution must be notarised or filed with the Ministry of Commerce, the practice-note row is `[model knowledge — verify]` — flag, do not assert.
+
+Notice to non-signatories, in these rows, is the circulation-to-all requirement (Art. 82, Arts. 100-101, Art. 166): the resolution must reach every member or partner, and any member's written request for a meeting defeats it. No separate post-signature notice period is in the files; if the user asks for one, tag `[no rule in ksa files — verify]`.
+
+If the articles of association are not available, say so in the output: "Statutory default applied (`<file>` Art. N); the articles may set a higher threshold or exclude this route — confirm before circulation." If a question has no row in the file (for `ksa`: committee resolutions by circulation, a partnership's written decisions), say so, tag `[no rule in <code> files — verify]`, and continue only with the rules that exist. Where the article must be quoted or its currency checked, use the research step: `python3 scripts/fetch-law.py --portal boe --id <guid> --lang ar` (GUIDs in `references/jurisdictions/<code>/SOURCES.md`; the built-in web-fetch tool rejects the portal's TLS chain, use the script or `curl`), quote the article, tag `[BOE — Arabic]` or `[BOE — official English]`, and check the "تعديلات المادة" block. If the fetch fails, apply the "no silent supplement" rule: report the failure and stop, or continue on the file's row with its tag only if the user says so. An unpopulated code is a hard stop (Step 0, item 3): no consent is drafted against it.
+
+### When the applicable code is `usa`
+
+Check the state of incorporation in `~/.claude/plugins/config/claude-for-legal/corporate-legal/CLAUDE.md`. Research the written-consent requirements for that state before drafting, using the upstream research connectors. Cite the controlling statute section and any charter/bylaw provisions relied on. Verify currency — state corporate codes are amended regularly. Flag uncertainty for attorney verification rather than stating a rule you haven't confirmed.
+
+### In every case
+
+If `~/.claude/plugins/config/claude-for-legal/corporate-legal/CLAUDE.md` records a house position on any of these questions, apply it and note the legal backstop being relied on. Add a short "Jurisdiction rule" block to the output summarizing what you confirmed (or flagged) — file and article for a non-`usa` code, statute section for `usa` — so the user isn't left wondering.
 
 ---
 
@@ -256,7 +369,7 @@ If `~/.claude/plugins/config/claude-for-legal/corporate-legal/CLAUDE.md` records
 > Executing a written consent has legal consequences — it binds the entity and becomes a corporate record. Have you reviewed this with an attorney? If yes, proceed. If no, here's a brief to bring to them:
 >
 > - What the action is (the resolution)
-> - What the analysis found (state-law notice, signature threshold, any flagged conflicts)
+> - What the analysis found (the jurisdiction's notice and majority rule with its file and article, signature threshold, any flagged conflicts)
 > - Open questions (anything flagged for attorney verification above)
 > - What could go wrong (invalid consent, breach of fiduciary duty, signature defect, conflict not properly handled)
 > - What to ask the attorney (is this the right vehicle; are there missing recitals; does the charter/bylaws permit consent for this action)
@@ -271,28 +384,33 @@ Do not produce the final signatory-ready draft past this gate without an explici
 
 Produce:
 
-1. **The consent draft** — complete, ready to review and circulate. The executed written consent itself is a corporate record, not privileged; do not apply the work-product header to the consent as circulated. The drafting notes, signatory tracker, and analysis below are work product — prepend the work-product header from `~/.claude/plugins/config/claude-for-legal/corporate-legal/CLAUDE.md` `## Outputs` (it differs by user role — see `## Who's using this`):
+1. **The consent draft** — complete, ready to review and circulate. The executed written consent itself is a corporate record, not privileged; do not apply the work-product header to the consent as circulated. The drafting notes, signatory tracker, and analysis below are work product — prepend the work-product header from `~/.claude/plugins/config/claude-for-legal/corporate-legal/CLAUDE.md` `## Outputs` (it differs by user role — see `## Who's using this`), then, for a non-`usa` code, the jurisdiction disclaimer line from the profile `## Jurisdiction` / the manifest, and apply the bilingual house-style rule from `## Outputs`: when the profile's output language is bilingual, or the resolution will be filed or shown to a counterparty in a jurisdiction whose authoritative language is not English, the resolution text itself (counterparty-facing) and the bottom line of the drafting notes are rendered in the authoritative language beside the English, using the manifest's spellings. Amounts are in the profile currency; dates follow the manifest's calendar.
 
    ```
    [WORK-PRODUCT HEADER — per plugin config ## Outputs — differs by role; see `## Who's using this`]
+   [JURISDICTION DISCLAIMER LINE — from the profile ## Jurisdiction, for a non-usa code]
    ```
 
 2. **Signatory checklist:**
 ```
 [WORK-PRODUCT HEADER — per plugin config ## Outputs — differs by role; see `## Who's using this`]
+[JURISDICTION DISCLAIMER LINE — for a non-usa code]
 
 SIGNATORY CHECKLIST — [Action] — [Date]
 
-Required signatories (unanimous consent required):
-□ [Director Name 1]
-□ [Director Name 2]
-□ [Director Name 3]
+Required signatories (signature threshold: [resolved in Step 4 — e.g. unanimous / majority of all members per companies-law.md Art. 82 / > 50% of capital per Art. 166 / ≥ 75% per Art. 172 / per articles clause N]):
+□ [Director / partner Name 1]
+□ [Director / partner Name 2]
+□ [Director / partner Name 3]
 [etc. — pulled from board composition in `~/.claude/plugins/config/claude-for-legal/corporate-legal/CLAUDE.md`]
 
 Conflict disclosures:
-[None / [Director Name] has a disclosed interest — confirm whether recusal or disclosure is appropriate]
+[None / [Director Name] has a disclosed interest — confirm whether recusal or disclosure is appropriate; counted / excluded from the majority per [file Art. N]]
 
-State law notice: [confirmed-rule-for-state-of-incorporation / confirm]
+Jurisdiction rule: [code] — [rule confirmed in Step 4 with file and article and its tag, e.g. "ksa — companies-law.md Art. 82 [settled — last confirmed 2026-09-04]: urgent matter, circulated to all, majority of all members, table at next meeting; register per Art. 83" / for usa: confirmed-rule-for-state-of-incorporation / `[no rule in <code> files — verify]` / confirm]
+Articles of association: [applied clause N / not on file — statutory default applied, articles may set a higher threshold]
+Signature form: [electronic valid per electronic-transactions-law.md Arts. 5, 14(1); presumption per Art. 14(3)-(4) only if certified / wet ink required because [row] / confirm]
+Reviewer note: Jurisdiction: [codes applied]; files: [list]; portal fetched: yes/no; unpopulated codes: [list or none].
 ```
 
 3. **Review prompts:**
@@ -305,6 +423,7 @@ BEFORE CIRCULATING — check:
 □ All required exhibits attached and referenced
 □ Authorised signatories named correctly
 □ Any director conflicts disclosed or resolved
+□ Majority statement matches the threshold in the jurisdiction rule; register entry / tabling for ratification noted where the file requires it
 □ For major actions: outside counsel has reviewed
 ```
 

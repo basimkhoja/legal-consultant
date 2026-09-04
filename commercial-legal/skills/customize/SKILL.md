@@ -19,6 +19,24 @@ in their practice profile — a risk posture, an escalation contact, a playbook
 position, a jurisdiction, an output format — without re-running the whole
 cold-start interview and without hand-editing YAML.
 
+### Step 0: Resolve the applicable jurisdiction
+
+1. **Read the practice profile's `## Jurisdiction` section.** It gives the primary jurisdiction code, the footprint list (other codes the practice operates in), the output-language preference, and whether local counsel is available for escalation. Codes are ISO 3166-1 alpha-3 lowercase (`ksa`, `gbr`, `fra`, `che`, `usa`). If the section is missing or still a placeholder, stop: "The practice profile has no jurisdiction. Run the cold-start interview; nothing in this skill can run against the wrong jurisdiction."
+2. **Determine the matter's jurisdiction(s).** Start from the primary code. Then read the matter facts: governing-law clause, seat of arbitration, place of employment, jurisdiction of incorporation, place of performance. If the facts point to a code not in the profile, add it for this matter and say so in the reviewer note. A matter may have more than one code (a contract governed by English law with a Saudi counterparty and Saudi performance is `gbr` + `ksa`).
+3. **Load the jurisdiction folder for each code.** The folder is `references/jurisdictions/<code>/` in this plugin (the same tree ships at the repo root and in every runtime adapter). Read `MANIFEST.md` first.
+   - If `populated` is not `yes`: **stop for that code.** Say: "Jurisdiction `<code>` (<name>) is registered but not populated: no reference files exist for it. I will not apply another jurisdiction's rules or model knowledge in its place. Options: (1) populate `references/jurisdictions/<code>/` (see README, 'How to add a jurisdiction'), (2) route this matter to local counsel, (3) tell me to proceed with the analysis limited to the populated jurisdictions in this matter, with every finding for `<code>` marked `[not populated — no rule applied]`." Wait for the answer. Never fall back silently.
+   - If the code is `usa`: there is no folder. Follow this skill's US path (the upstream doctrine and the upstream research connectors, CourtListener or Westlaw, with the upstream "no silent supplement" rule). Label findings `[usa]`.
+   - If `populated` is `yes`: read `INDEX.md`, then the instrument files this skill names in its "Jurisdiction files" list. A row tagged `[settled — last confirmed YYYY-MM-DD]` may be applied and cited by article. A row tagged `[model knowledge — verify]` may be applied only with that tag carried onto the finding. If a rule this skill needs is not in the files at all, do not supply it from memory: say what is missing, tag the gap `[no rule in <code> files — verify]`, and continue only with the rules that exist.
+4. **Multi-jurisdiction matters.** Run the relevant files side by side. Label every finding with its code in square brackets, `[ksa]`, `[gbr]`, `[usa]`, and never merge two jurisdictions' rules into one sentence. Where the codes conflict (a clause valid under one law and reducible under another), state both and flag `[review]` for the lawyer to decide which governs.
+5. **Research step (when a rule must be quoted or its currency checked).** Use the portal named in `MANIFEST.md` → `research_tool`. For `ksa`: `python3 scripts/fetch-law.py --portal boe --id <guid> --lang ar` (GUIDs in `SOURCES.md`), or `curl -sS https://laws.boe.gov.sa/BoeLaws/Laws/LawDetails/<guid>/1`; the built-in web-fetch tool rejects the portal's TLS chain. Quote the article, tag `[BOE — Arabic]` (or `[BOE — official English]` when quoting the translation), and check the status line and the "تعديلات المادة" block for amendments. If the fetch fails or the article is not found, apply the "no silent supplement" rule: report the failure and stop, or continue with the rule tagged `[model knowledge — verify]` only if the user says so.
+6. **Calendar and language.** Take the weekend, public-holiday, calendar (Hijri or Gregorian) and currency rules from `MANIFEST.md`. Compute every date and roll-back against that calendar, never against a Saturday/Sunday weekend or US federal holidays. Produce the deliverable in English; when the profile's output-language preference is bilingual, or the manifest's authoritative language is not English and counterparty-facing text is produced, add the authoritative-language rendering of the bottom line, the findings table, and any counterparty-facing text, using the spellings in the manifest's `output_language_rule`.
+7. **Header and disclaimer.** Prepend the manifest's `disclaimer` line under the work-product header for every deliverable that applies a non-`usa` jurisdiction. For `ksa`: "Arabic text is authoritative; English translations are for convenience; a licensed Saudi lawyer must review before reliance." with its Arabic rendering from the manifest.
+8. **Record in the reviewer note.** `Jurisdiction: <codes applied>; files: <list>; portal fetched: yes/no; unpopulated codes: <list or none>.`
+
+**Jurisdiction files this skill loads:** `references/jurisdictions/REGISTRY.md`, `references/jurisdictions/<code>/MANIFEST.md` for every code in the profile, and `references/jurisdictions/<code>/playbook-defaults.md` (Commercial table) for the primary code when the jurisdiction is changed. No instrument file is read here.
+
+*In this skill Step 0 runs against the profile as it stands before the change and again against the new code when the jurisdiction is the thing being changed; item 3's unpopulated stop applies to the new code.*
+
 ## What to do
 
 1. **Read the config.** Read
@@ -33,13 +51,19 @@ cold-start interview and without hand-editing YAML.
 2. **Show the customizable map.** List what's in the profile, grouped, with a
    one-line summary of the current value:
 
-   - **Company / who you are** — name, industry, jurisdictions, stage, practice
-     setting, sales-side vs. purchasing-side orientation *(shared across all
-     12 plugins — changes flow through `company-profile.md`)*
+   - **Company / who you are** — name, industry, stage, practice setting,
+     commercial registration and legal form, sales-side vs. purchasing-side
+     orientation *(shared across all 12 plugins — changes flow through
+     `company-profile.md`)*
+   - **Jurisdiction** — primary code, footprint codes, output language
+     (English / bilingual / authoritative language only), local counsel for
+     escalation, and the accepted rows of the jurisdiction playbook defaults
+     *(the `## Jurisdiction` section; changing the primary code re-runs the
+     defaults offer and re-validates every playbook position — see step 5a)*
    - **Risk posture** — conservative / middle / aggressive, what each means
      for fallback positions and escalation triggers
-   - **People** — escalation chain, approvers by dollar threshold and by
-     clause type
+   - **People** — escalation chain, approvers by value threshold (in the
+     profile currency) and by clause type
    - **Playbook positions** — the substantive contract positions: liability
      caps, indemnity scope, IP ownership, data protection, termination,
      auto-renewal, price escalation, and the fallbacks for each
@@ -78,6 +102,52 @@ cold-start interview and without hand-editing YAML.
 
    > This change affects all 12 plugins — any plugin that reads your
    > jurisdiction footprint now sees [new value].
+
+   5a. **For a jurisdiction change** (primary code, or adding a footprint
+   code), the write is not a one-line swap. Run, in order:
+
+   1. Read `references/jurisdictions/REGISTRY.md` and the new code's
+      `MANIFEST.md`. If `populated` is not `yes` and the code is not `usa`,
+      refuse the change as the primary code with the Step 0 unpopulated
+      stop, verbatim in substance: "Jurisdiction `<code>` (<name>) is
+      registered but not populated: no reference files exist for it. I will
+      not set it as your primary jurisdiction, because every skill would
+      then stop on every matter. Options: (1) keep the current primary and
+      add `<code>` to the footprint (skills will stop for it on matters that
+      engage it and mark findings `[not populated — no rule applied]`),
+      (2) populate `references/jurisdictions/<code>/` first, (3) leave it."
+      Wait.
+   2. Rewrite the `## Jurisdiction` section from the new manifest:
+      authoritative language, calendar, currency, portal, and ask again for
+      output language and local counsel (they are jurisdiction-specific).
+      Update the `## Outputs` disclaimer line to the new manifest's
+      `disclaimer` (or remove it for `usa`) and the header note.
+   3. **Re-offer the playbook defaults.** Open the new code's
+      `references/jurisdictions/<code>/playbook-defaults.md` → Commercial
+      table and walk it row by row exactly as the cold-start interview does
+      (accept / edit / reject, each with its Basis citation and tag). For
+      `usa` there is no file: say so and skip.
+   4. **Re-validate every existing playbook position** for each configured
+      side against the new code's files: for each position that the old
+      defaults had cited (the Basis citation beside it), strike the old
+      citation; for each position the new file's rows bear on (for `ksa`:
+      liability carve-outs against `civil-transactions-law.md` Art. 173,
+      penalties and termination fees against Arts. 178-179, limitation
+      clauses against Arts. 305-306, forum against `arbitration-law.md`
+      and `commercial-courts-law.md`, data terms against
+      `personal-data-protection-law.md` Art. 8), show the user the position
+      and the row and ask whether to keep, edit, or mark `[review]`. Never
+      silently keep a position the new jurisdiction's file marks void, and
+      never rewrite one from memory where the file is silent — tag
+      `[no rule in <code> files — verify]` and leave it to the user.
+   5. Convert the escalation value thresholds to the new currency only if
+      the user gives the numbers; otherwise mark them `[PENDING — restate
+      in <currency>]`. Note that the renewal register's
+      `cancel_by_effective` dates were computed against the old calendar
+      and offer to recompute them with `/commercial-legal:renewal-tracker`.
+   6. Close with: "Jurisdiction changed to `<code>`. Every skill now loads
+      `references/jurisdictions/<code>/` at Step 0; [N] playbook positions
+      were re-validated, [M] are marked `[review]`."
 
 6. **Close.**
 

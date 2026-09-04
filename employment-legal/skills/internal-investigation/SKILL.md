@@ -22,6 +22,8 @@ user-invocable: false
 
 Prepend the work-product header from `~/.claude/plugins/config/claude-for-legal/employment-legal/CLAUDE.md` → `## Outputs` (it differs by user role — see `## Who's using this`). Every file, log, memo, and summary produced by this skill opens with that header.
 
+**Fork addition — jurisdiction disclaimer and bilingual rendering.** For every deliverable that applies a jurisdiction other than `usa` (per Step 0 below), add the jurisdiction disclaimer line from the practice profile `## Jurisdiction` section (the manifest's `disclaimer`, in English and the authoritative language) directly under the work-product header. Then apply the bilingual house-style rule from CLAUDE.md `## Outputs`: when the profile's output language is bilingual, or the deliverable contains counterparty-facing text (a penalty notice, a grievance response, a settlement letter), add the authoritative-language rendering of the bottom line, the findings table, and each counterparty-facing passage, using the spellings in the manifest's `output_language_rule`. Do not paste the disclaimer or Arabic text from memory; take it from the profile and the manifest. The privilege caveat below applies with more force outside `usa`: CLAUDE.md `## Outputs` already says "work product" is a US doctrine and tells you how to adjust the header for a non-US footprint — follow it.
+
 > **Distribution discipline.** Every file this skill creates — log entries, memo drafts, audience summaries, document notes — inherits the privilege and confidentiality status of the underlying investigation. Distribution beyond the privilege circle (forwarding to non-attorneys outside the investigation team, cc'ing HR without scoping, handing to the business side) can waive privilege over the entire investigation. Store these files where privileged materials live, label per the work-product header, and make every distribution decision deliberately.
 
 ## ⚠️ Privilege notice — read before proceeding
@@ -70,6 +72,29 @@ Read `~/.claude/plugins/config/claude-for-legal/employment-legal/CLAUDE.md` → 
 Triggered by `/employment-legal:investigation-open` or "open an investigation"
 or "start an investigation into".
 
+### Step 0: Resolve the applicable jurisdiction
+
+1. **Read the practice profile's `## Jurisdiction` section.** It gives the primary jurisdiction code, the footprint list (other codes the practice operates in), the output-language preference, and whether local counsel is available for escalation. Codes are ISO 3166-1 alpha-3 lowercase (`ksa`, `gbr`, `fra`, `che`, `usa`). If the section is missing or still a placeholder, stop: "The practice profile has no jurisdiction. Run the cold-start interview; nothing in this skill can run against the wrong jurisdiction."
+2. **Determine the matter's jurisdiction(s).** Start from the primary code. Then read the matter facts: governing-law clause, seat of arbitration, place of employment, jurisdiction of incorporation, place of performance. If the facts point to a code not in the profile, add it for this matter and say so in the reviewer note. A matter may have more than one code (a contract governed by English law with a Saudi counterparty and Saudi performance is `gbr` + `ksa`).
+3. **Load the jurisdiction folder for each code.** The folder is `references/jurisdictions/<code>/` in this plugin (the same tree ships at the repo root and in every runtime adapter). Read `MANIFEST.md` first.
+   - If `populated` is not `yes`: **stop for that code.** Say: "Jurisdiction `<code>` (<name>) is registered but not populated: no reference files exist for it. I will not apply another jurisdiction's rules or model knowledge in its place. Options: (1) populate `references/jurisdictions/<code>/` (see README, 'How to add a jurisdiction'), (2) route this matter to local counsel, (3) tell me to proceed with the analysis limited to the populated jurisdictions in this matter, with every finding for `<code>` marked `[not populated — no rule applied]`." Wait for the answer. Never fall back silently.
+   - If the code is `usa`: there is no folder. Follow this skill's US path (the upstream doctrine and the upstream research connectors, CourtListener or Westlaw, with the upstream "no silent supplement" rule). Label findings `[usa]`.
+   - If `populated` is `yes`: read `INDEX.md`, then the instrument files this skill names in its "Jurisdiction files" list. A row tagged `[settled — last confirmed YYYY-MM-DD]` may be applied and cited by article. A row tagged `[model knowledge — verify]` may be applied only with that tag carried onto the finding. If a rule this skill needs is not in the files at all, do not supply it from memory: say what is missing, tag the gap `[no rule in <code> files — verify]`, and continue only with the rules that exist.
+4. **Multi-jurisdiction matters.** Run the relevant files side by side. Label every finding with its code in square brackets, `[ksa]`, `[gbr]`, `[usa]`, and never merge two jurisdictions' rules into one sentence. Where the codes conflict (a clause valid under one law and reducible under another), state both and flag `[review]` for the lawyer to decide which governs.
+5. **Research step (when a rule must be quoted or its currency checked).** Use the portal named in `MANIFEST.md` → `research_tool`. For `ksa`: `python3 scripts/fetch-law.py --portal boe --id <guid> --lang ar` (GUIDs in `SOURCES.md`), or `curl -sS https://laws.boe.gov.sa/BoeLaws/Laws/LawDetails/<guid>/1`; the built-in web-fetch tool rejects the portal's TLS chain. Quote the article, tag `[BOE — Arabic]` (or `[BOE — official English]` when quoting the translation), and check the status line and the "تعديلات المادة" block for amendments. If the fetch fails or the article is not found, apply the "no silent supplement" rule: report the failure and stop, or continue with the rule tagged `[model knowledge — verify]` only if the user says so.
+6. **Calendar and language.** Take the weekend, public-holiday, calendar (Hijri or Gregorian) and currency rules from `MANIFEST.md`. Compute every date and roll-back against that calendar, never against a Saturday/Sunday weekend or US federal holidays. Produce the deliverable in English; when the profile's output-language preference is bilingual, or the manifest's authoritative language is not English and counterparty-facing text is produced, add the authoritative-language rendering of the bottom line, the findings table, and any counterparty-facing text, using the spellings in the manifest's `output_language_rule`.
+7. **Header and disclaimer.** Prepend the manifest's `disclaimer` line under the work-product header for every deliverable that applies a non-`usa` jurisdiction. For `ksa`: "Arabic text is authoritative; English translations are for convenience; a licensed Saudi lawyer must review before reliance." with its Arabic rendering from the manifest.
+8. **Record in the reviewer note.** `Jurisdiction: <codes applied>; files: <list>; portal fetched: yes/no; unpopulated codes: <list or none>.`
+
+**Jurisdiction files this skill loads:**
+
+- `references/jurisdictions/<code>/labor-law.md` — Arts. 66-73 (closed list of disciplinary penalties, the two 30-day clocks in Art. 69, the Art. 70 caps, the Art. 71 written charge / interrogation / defence / minutes requirement, the Art. 72 grievance ladder, the Art. 73 fines register); Arts. 80-81 (summary-dismissal grounds and the worker's exit grounds); Art. 65(6) (duty to keep the employer's secrets). For `ksa` these rows carry `[settled — last confirmed 2026-09-04]`.
+- `references/jurisdictions/<code>/labor-law-implementing-regulations.md` — Reg. Art. 5 (the seven statutory records: attendance register, fines register, personnel file — the primary evidence sources); Annex 1 Arts. 53-56 (harassment complaint within five working days, investigating committee within five working days, confidentiality, signed minutes, separation of the parties, criminal referral); Annex 1 Arts. 58-70 (discipline procedure and the schedule of violations and penalties); Annex 1 Art. 71 (grievance).
+- `references/jurisdictions/<code>/labor-dispute-route.md` — Art. 72 / Annex 1 Art. 71 timing of the penalty notice (30-day grievance, 15-day decision, 30-day court objection); Art. 235 (no change of employment terms once a claim is filed); Art. 234(a) (12-month limitation from the end of the relationship).
+- `references/jurisdictions/<code>/occupational-safety.md` — for accident and safety-breach investigations: Art. 80(2) (posted instructions plus written warning), Art. 139 (employer's burden to prove the worker's intentional misconduct or refusal of treatment), Art. 141 / Reg. Art. 28 (one-week injury report for establishments outside the GOSI occupational-hazards branch).
+
+If the applicable code is `usa`, none of these files exists; the skill follows its `usa` branches below. If the code is populated but a row this skill needs is absent or tagged `[model knowledge — verify]`, say so at the step where it bites, tag the point `[no rule in <code> files — verify]`, and continue only with the rows that exist. Do not supply the missing rule from memory.
+
 ### Step 1 — Intake
 
 Ask the following in a single block:
@@ -82,8 +107,11 @@ Ask the following in a single block:
 >   manager observation)?
 > - Who is the respondent or subject?
 > - What is the approximate timeframe the alleged conduct occurred?
-> - Is this attorney-directed? (If yes: work product protection applies.
->   If no: flag privilege risk before proceeding.)
+> - Is this attorney-directed? (The privilege consequence of the answer
+>   depends on the applicable jurisdiction code and is resolved in Step 1a
+>   before any file is created. If no: flag privilege risk before proceeding.)
+> - Which jurisdiction code(s) apply (from Step 0), and where does the
+>   respondent work?
 >
 > **Investigation type** (helps me suggest the right sources checklist)
 > - HR: harassment / discrimination / retaliation
@@ -93,22 +121,107 @@ Ask the following in a single block:
 > - Other: describe briefly
 >
 > **Representation and employer status** (surfaces parallel legal frameworks
-> that change interview procedure)
+> that may change interview procedure — the consequence is resolved in Step 1a)
 > - Is the respondent, the complainant, or any anticipated witness represented
->   by a union or covered by a collective bargaining agreement? (If yes, flag
->   for Weingarten research — representational rights at investigatory
->   interviews may apply and change the interview protocol.)
+>   by a union, works council, or covered by a collective agreement?
 > - Is the company a public employer (government entity, public university,
->   state or municipal agency) or otherwise acting under color of state law?
->   (If yes, flag for Garrity research — compelled statements in public-sector
->   investigations have special use-immunity consequences and change how
->   interviews must be conducted and documented.)
+>   state or municipal agency) or otherwise a public body?
+
+### Step 1a — Interview-rights and privilege basis
+
+Resolve, for each jurisdiction code from Step 0, (a) whether any interviewee
+holds a statutory right to representation or a protection against compelled
+statements, and (b) what protection, if any, the investigation files actually
+carry. Record the answer in `log.yaml` as `privilege_basis` (Step 2) and in
+the reviewer note. Do not interview until this step is done.
+
+**When the applicable code is `usa`:**
+
+- Attorney-directed investigation → work product protection may apply; if the
+  investigation is not attorney-directed, flag privilege risk before proceeding
+  (see the privilege notice at the top of this skill).
+- Union or collective bargaining agreement → flag for Weingarten research —
+  representational rights at investigatory interviews may apply and change the
+  interview protocol.
+- Public employer or acting under color of state law → flag for Garrity
+  research — compelled statements in public-sector investigations have special
+  use-immunity consequences and change how interviews must be conducted and
+  documented.
+- Upjohn warnings precede every employee interview and are documented (sources
+  checklist item below).
 
 If either flag fires, research the applicable rules (NLRA / state
 public-sector labor statutes for Weingarten; 5th Amendment and the Garrity
-line of cases, plus any state analogs) before conducting interviews. Cite
-primary sources. Verify currency. Do not interview until the protocol is
-adjusted.
+line of cases, plus any state analogs) before conducting interviews, using the
+upstream research connectors (CourtListener, Westlaw). Cite primary sources.
+Verify currency. Do not interview until the protocol is adjusted.
+`privilege_basis: attorney-work-product [usa]` (or `none-asserted [usa]` if not
+attorney-directed).
+
+**When the applicable code is populated (not `usa`):**
+
+- **Interview rights.** The jurisdiction files this skill loads carry no
+  interview-rights doctrine (no statutory right to representation at an
+  investigatory interview, no compelled-statement protection). Say so in the
+  intake summary and tag the point `[no rule in <code> files — verify]`. Do
+  not supply a rule from memory; if the user needs one, route the question to
+  local counsel per the profile `## Jurisdiction` section.
+- **Privilege basis.** The files carry no privilege or work-product doctrine
+  for internal investigations. Record `privilege_basis: no rule in <code>
+  files — verify` and defer the header and its protection to CLAUDE.md
+  `## Outputs` (which already states that "attorney work product" is a US
+  doctrine and gives the non-US header adjustment). Do not describe the
+  investigation file as privileged under the jurisdiction's law; the
+  confidentiality marking is meaningful, the privilege assertion is not
+  established by the files.
+- **Disciplinary procedure the file does carry — cite these rows, not
+  memory.** The applicable jurisdiction file governs what the investigation
+  must produce if a penalty is to follow: `references/jurisdictions/<code>/labor-law.md`
+  Arts. 66-73 (for `ksa`: written notice of the charge, interrogation,
+  hearing of the defence, and signed minutes placed in the personnel file
+  before any penalty above a one-day fine, Art. 71; the two 30-day clocks —
+  no charge for a violation discovered more than 30 days earlier, no penalty
+  more than 30 days after the investigation concludes and the violation is
+  established, Art. 69; the closed list of penalties, Art. 66; written
+  notification of the penalty decision and the 30/15/30 grievance ladder to
+  the labor courts, Art. 72), and
+  `references/jurisdictions/<code>/labor-law-implementing-regulations.md`
+  rows Annex 1 Arts. 53-56 (for `ksa`: harassment complaint to the
+  establishment within five working days of the abuse, an investigating
+  committee formed and recommending within five working days of the
+  complaint, confidential hearing of parties and witnesses, signed minutes,
+  separation of complainant and respondent, referral of crimes, and a
+  possible penalty for a malicious complaint) and the Annex 1 schedule of
+  violations and penalties (only the penalty listed against the violation, or
+  a lighter one, Annex 1 Art. 59; Annex 1 Arts. 58-70 for the procedure).
+  Date the discovery, the investigation start, the investigation end, and the
+  penalty decision from day one: the Art. 69 clocks are the most common
+  procedural defect the file records. Compute every window (five working
+  days, 30 days, 15 days) against the calendar in the manifest, never against
+  a Saturday/Sunday weekend or US federal holidays.
+- **Evidence sources.** Request the Reg. Art. 5 records (attendance register,
+  fines register, wage sheet, personnel file) as primary evidence — add them
+  to the sources checklist for the matter.
+- **Research step.** When an article must be quoted or its currency checked,
+  fetch the instrument from the portal named in the manifest
+  (`scripts/fetch-law.py --portal boe --id <guid> --lang ar`, GUIDs in
+  `references/jurisdictions/<code>/SOURCES.md`; the built-in web-fetch tool
+  rejects the portal's TLS chain, use the script or `curl`), quote the
+  article, tag `[BOE — Arabic]` or `[BOE — official English]`. If the fetch
+  fails or the article is not found, apply the "no silent supplement" rule:
+  report the failure and stop, or continue with the row as tagged in the file
+  only if the user says so.
+- **Stop rules.** If the code's manifest says `populated: no`, stop for that
+  code per Step 0 and do not open the log for it. If the file lacks a row the
+  investigation turns on (for `ksa`: the content of the friendly-settlement
+  rules, the Anti-Harassment Law overlay, the fine amounts in the HRSD
+  schedule — all `[model knowledge — verify]` or absent), say so, tag
+  `[no rule in <code> files — verify]`, and continue only with the rows that
+  exist.
+
+**Multi-jurisdiction matters:** run the branches side by side and label every
+finding with its code (`[usa]`, `[ksa]`, …); never merge two jurisdictions'
+rules into one sentence.
 
 ### Step 2 — Create the matter directory and files
 
@@ -122,6 +235,8 @@ matter: "[matter name]"
 matter_slug: "[slug]"
 opened: "[ISO date]"
 attorney_directed: [true/false]
+jurisdiction_codes: "[codes applied per Step 0, e.g. usa | ksa | ksa+gbr]"
+privilege_basis: "[attorney-work-product [usa] / none-asserted [usa] / no rule in <code> files — verify — per Step 1a]"
 allegation: "[plain-language summary]"
 complainant: "[name/role or anonymous]"
 respondent: "[name/role]"
@@ -208,8 +323,21 @@ sources:
     status: open
     notes: ""
   - id: 11
-    source: "Upjohn warning documentation — confirm interviews were preceded
-             by Upjohn warnings and documented"
+    source: "Interview-notice documentation — `usa`: Upjohn warning
+             documentation (confirm interviews were preceded by Upjohn
+             warnings and documented); other codes: informational notice to
+             the interviewee, privilege basis per Step 1a
+             [no rule in <code> files — verify]"
+    status: open
+    notes: ""
+  - id: 12
+    source: "Populated non-`usa` code only: statutory employer records named
+             in `references/jurisdictions/<code>/labor-law-implementing-regulations.md`
+             Reg. Art. 5 (attendance register, fines register, wage sheet,
+             personnel file) and the dated record of discovery, investigation
+             start and end, and penalty decision for the `labor-law.md`
+             Art. 69 clocks; for a harassment matter, the Annex 1 Arts. 53-56
+             complaint date, committee formation date and signed minutes"
     status: open
     notes: ""
 ```
@@ -258,7 +386,10 @@ sources:
     status: open
     notes: ""
   - id: 11
-    source: "Upjohn warning documentation"
+    source: "Interview-notice documentation — `usa`: Upjohn warning
+             documentation; other codes: informational notice to the
+             interviewee, privilege basis per Step 1a
+             [no rule in <code> files — verify]"
     status: open
     notes: ""
 ```
@@ -308,7 +439,10 @@ sources:
     status: open
     notes: ""
   - id: 11
-    source: "Upjohn warning documentation"
+    source: "Interview-notice documentation — `usa`: Upjohn warning
+             documentation; other codes: informational notice to the
+             interviewee, privilege basis per Step 1a
+             [no rule in <code> files — verify]"
     status: open
     notes: ""
 ```
@@ -357,7 +491,10 @@ sources:
     status: open
     notes: ""
   - id: 10
-    source: "Upjohn warning documentation"
+    source: "Interview-notice documentation — `usa`: Upjohn warning
+             documentation; other codes: informational notice to the
+             interviewee, privilege basis per Step 1a
+             [no rule in <code> files — verify]"
     status: open
     notes: ""
 ```
@@ -383,7 +520,8 @@ Ask (if not clear from context):
 - Interview notes (whose interview?)
 - Document batch (emails, records, files)
 - Attorney notes or observations
-- Upjohn warning confirmation
+- Interview-notice confirmation (`usa`: Upjohn warning confirmation; other
+  codes: the informational notice given per Step 1a)
 
 ### Step 3 — Document pull criteria
 
@@ -454,7 +592,8 @@ For each surfaced item, append to `log.yaml`:
   corroborates_entry: [entry_id or null]
   credibility_note: ""
   pull_criterion: "[which criterion triggered — for documents]"
-  privilege: attorney-work-product
+  privilege: attorney-work-product   # label only — see privilege_basis
+  privilege_basis: "[attorney-work-product [usa] / none-asserted / no rule in <code> files — verify — copied from log.yaml per Step 1a]"
 ```
 
 For evidentiary gaps:
@@ -507,9 +646,20 @@ For each issue in the log, identify: the highest-significance log entries,
 any documentary corroboration, and any unresolved conflicts. Present
 issue by issue.
 
-**Upjohn query** ("have we documented Upjohn warnings"):
-Check checklist item and any log entries tagged as Upjohn documentation.
-Flag if not yet completed.
+**Interview-notice query** ("have we documented Upjohn warnings" — `usa`;
+"have we documented the interview notices" — other codes):
+Check the interview-notice checklist item and any log entries tagged as
+interview-notice documentation. Flag if not yet completed. For a populated
+non-`usa` code, answer against the informational notice recorded per Step 1a
+and remind the reader that the files carry no interview-rights doctrine
+`[no rule in <code> files — verify]`.
+
+**Procedure-clock query** (populated non-`usa` code: "are we inside the
+disciplinary clocks"): read the dated discovery, investigation-start,
+investigation-end and penalty-decision entries and test them against the
+rows this skill loads from `references/jurisdictions/<code>/labor-law.md`
+Art. 69 and Annex 1 Arts. 53-56 (five working days), computed on the
+manifest's calendar. If a date is missing, say so; do not assume it.
 
 ---
 
@@ -531,6 +681,7 @@ investigation memorandum practice:
 
 ```markdown
 [WORK-PRODUCT HEADER — per plugin config ## Outputs — differs by role; see `## Who's using this`]
+[JURISDICTION DISCLAIMER LINE — from the profile ## Jurisdiction / manifest `disclaimer`, English and authoritative language — for every non-`usa` code applied; omit for `usa`]
 
 ---
 
@@ -637,7 +788,10 @@ Cite the version. Do not cite policies that were adopted after the conduct.]
 | [Issue 1] | Sustained / Not Sustained / Inconclusive | [One sentence] |
 | [Issue 2] | ... | ... |
 
-*Findings are based on a preponderance of the evidence standard.*
+*Standard of proof — `usa`: findings are based on a preponderance of the
+evidence standard. Populated non-`usa` code: the jurisdiction files state no
+standard of proof for internal investigations; state the standard the
+attorney chose and tag it `[no rule in <code> files — verify]`.*
 
 ---
 
@@ -645,7 +799,15 @@ Cite the version. Do not cite policies that were adopted after the conduct.]
 
 [Organized by action type:]
 
-**Disciplinary action:** [If any — state the basis, not just the outcome]
+**Disciplinary action:** [If any — state the basis, not just the outcome.
+Populated non-`usa` code: the penalty must be one on the closed list in
+`references/jurisdictions/<code>/labor-law.md` Art. 66 and the one listed
+against the violation in the Annex 1 schedule (or lighter), imposed within
+the Art. 69 clocks after the Art. 71 hearing, notified in writing with the
+Art. 72 grievance ladder; cite the rows, and if the matter turns on a fine
+amount or a schedule row the file tags `[model knowledge — verify]`, say so
+and stop on that point. Any dismissal ground routes to
+`/employment-legal:termination-review` (its jurisdiction branch).]
 **Policy or process changes:** [If any gap in policies contributed]
 **Training:** [If indicated]
 **Further investigation:** [Any threads not fully resolved]
@@ -708,7 +870,10 @@ support?
 - Recommended action
 - What is NOT in this summary: privilege analysis, credibility methodology,
   legal exposure assessment, attorney mental impressions
-- Header: "Confidential — HR Use Only — Do Not Distribute"
+- Header: "Confidential — HR Use Only — Do Not Distribute"; for a non-`usa`
+  code add the jurisdiction disclaimer line beneath it (it stays on every
+  deliverable) and, where the profile asks for bilingual output, the
+  authoritative-language rendering of the findings table
 - Do not include entry IDs or document citations — those stay in the memo
 
 **Leadership/Board summary** (for governance decision):
@@ -716,25 +881,27 @@ support?
 - Key findings
 - Business impact / exposure (high level — no specific legal analysis)
 - What the company is doing about it
-- Header: "[WORK-PRODUCT HEADER — per plugin config ## Outputs — differs by role; see `## Who's using this`]"
+- Header: "[WORK-PRODUCT HEADER — per plugin config ## Outputs — differs by role; see `## Who's using this`]" plus the jurisdiction disclaimer line for any non-`usa` code
 
 **Outside counsel briefing** (handing off for litigation or deeper review):
 - Full context including legal exposure analysis
 - Open evidentiary threads
 - Credibility issues that remain contested
 - Documents that would be most significant in litigation
-- Header: "[WORK-PRODUCT HEADER — per plugin config ## Outputs — differs by role; see `## Who's using this`]"
+- For a populated non-`usa` code: the forum route and the limitation from `references/jurisdictions/<code>/labor-dispute-route.md` (for `ksa`: friendly settlement at HRSD as a condition precedent, then the Labor Courts; Art. 234(a) twelve months from the end of the relationship; Art. 235 freeze on employment terms once a claim is pending; the 21-working-day settlement window only as `[model knowledge — verify]`)
+- Header: "[WORK-PRODUCT HEADER — per plugin config ## Outputs — differs by role; see `## Who's using this`]" plus the jurisdiction disclaimer line for any non-`usa` code
 
 ---
 
 ## Consequential-action gate (respond to a demand or complaint)
 
-**Before producing a summary, memo, or content intended for an external response (EEOC/DFEH/state agency charge response, plaintiff's-counsel demand letter response, regulator response, or any formal complaint reply):** Read `## Who's using this` in `~/.claude/plugins/config/claude-for-legal/employment-legal/CLAUDE.md`. If the Role is **Non-lawyer**:
+**Before producing a summary, memo, or content intended for an external response (for `usa`: EEOC/DFEH/state agency charge response, plaintiff's-counsel demand letter response, regulator response; for a populated code: the labour authority, settlement body, or court named in `references/jurisdictions/<code>/labor-dispute-route.md` — for `ksa` the HRSD friendly-settlement stage, then the Labor Courts, within the Art. 234(a) twelve-month limitation — plus any worker's-counsel demand; or any formal complaint reply):** Read `## Who's using this` in `~/.claude/plugins/config/claude-for-legal/employment-legal/CLAUDE.md`. If the Role is **Non-lawyer**:
 
 > Responding to a demand, charge, or complaint has legal consequences — positions taken here are admissions in later proceedings, waivers of defenses can be inadvertent, and privilege over the underlying investigation can be lost. Have you reviewed this response with an attorney? If yes, proceed. If no, here's a brief to bring to them:
 >
 > - The allegation, the forum, and the deadline
-> - What the investigation surfaced (findings by allegation; documents reviewed; witnesses interviewed; Upjohn warnings given or not)
+> - What the investigation surfaced (findings by allegation; documents reviewed; witnesses interviewed; interview notices given or not — Upjohn warnings for `usa`, the Step 1a notice otherwise)
+> - For a populated non-`usa` code: whether the disciplinary clocks and hearing steps in `references/jurisdictions/<code>/labor-law.md` Arts. 69-72 were met, and the Art. 235 freeze once a claim is pending
 > - Any unresolved evidentiary threads or credibility contests
 > - What the proposed response says and what it implicitly concedes
 > - Open questions and what's unresolved
@@ -756,8 +923,11 @@ Do not produce an external-response draft past this gate without an explicit yes
 - Process documents it cannot read — if files are in formats that cannot
   be parsed, flag them for manual review
 - Conduct interviews — it logs interview notes, it does not interview witnesses
-- Replace Upjohn warnings — it tracks whether they were given, it does not
-  give them
+- Replace interview notices (`usa`: Upjohn warnings) — it tracks whether they
+  were given, it does not give them
+- Supply interview-rights, privilege, or standard-of-proof rules for a
+  jurisdiction whose files do not carry them — it says so and tags
+  `[no rule in <code> files — verify]`
 
 ## Close with the next-steps decision tree
 

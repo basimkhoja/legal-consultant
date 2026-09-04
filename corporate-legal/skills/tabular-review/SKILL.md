@@ -12,7 +12,8 @@ description: >
 
 # /tabular-review
 
-1. Load `~/.claude/plugins/config/claude-for-legal/corporate-legal/CLAUDE.md` → diligence structure, thresholds, house format.
+0. Run Step 0 (resolve the applicable jurisdiction) below; the codes decide which overlay columns `references/ma-diligence-columns.md` offers and the currency of every `currency` cell.
+1. Load `~/.claude/plugins/config/claude-for-legal/corporate-legal/CLAUDE.md` → `## Jurisdiction`, diligence structure, thresholds, house format.
 2. Confirm: what documents, what columns, where does the output go.
 3. Build the typed schema. Write `.review-schema.yaml`. Confirm with the user.
 4. Sample run (3–5 docs). Adjust schema. Confirm.
@@ -91,7 +92,28 @@ These are three different pieces of information. A deal team handles "the contra
 
 ## Workflow
 
-### Step 0: What and where
+### Step 0: Resolve the applicable jurisdiction
+
+1. **Read the practice profile's `## Jurisdiction` section.** It gives the primary jurisdiction code, the footprint list (other codes the practice operates in), the output-language preference, and whether local counsel is available for escalation. Codes are ISO 3166-1 alpha-3 lowercase (`ksa`, `gbr`, `fra`, `che`, `usa`). If the section is missing or still a placeholder, stop: "The practice profile has no jurisdiction. Run the cold-start interview; nothing in this skill can run against the wrong jurisdiction."
+2. **Determine the matter's jurisdiction(s).** Start from the primary code. Then read the matter facts: governing-law clause, seat of arbitration, place of employment, jurisdiction of incorporation, place of performance. If the facts point to a code not in the profile, add it for this matter and say so in the reviewer note. A matter may have more than one code (a contract governed by English law with a Saudi counterparty and Saudi performance is `gbr` + `ksa`).
+3. **Load the jurisdiction folder for each code.** The folder is `references/jurisdictions/<code>/` in this plugin (the same tree ships at the repo root and in every runtime adapter). Read `MANIFEST.md` first.
+   - If `populated` is not `yes`: **stop for that code.** Say: "Jurisdiction `<code>` (<name>) is registered but not populated: no reference files exist for it. I will not apply another jurisdiction's rules or model knowledge in its place. Options: (1) populate `references/jurisdictions/<code>/` (see README, 'How to add a jurisdiction'), (2) route this matter to local counsel, (3) tell me to proceed with the analysis limited to the populated jurisdictions in this matter, with every finding for `<code>` marked `[not populated — no rule applied]`." Wait for the answer. Never fall back silently.
+   - If the code is `usa`: there is no folder. Follow this skill's US path (the upstream doctrine and the upstream research connectors, CourtListener or Westlaw, with the upstream "no silent supplement" rule). Label findings `[usa]`.
+   - If `populated` is `yes`: read `INDEX.md`, then the instrument files this skill names in its "Jurisdiction files" list. A row tagged `[settled — last confirmed YYYY-MM-DD]` may be applied and cited by article. A row tagged `[model knowledge — verify]` may be applied only with that tag carried onto the finding. If a rule this skill needs is not in the files at all, do not supply it from memory: say what is missing, tag the gap `[no rule in <code> files — verify]`, and continue only with the rules that exist.
+4. **Multi-jurisdiction matters.** Run the relevant files side by side. Label every finding with its code in square brackets, `[ksa]`, `[gbr]`, `[usa]`, and never merge two jurisdictions' rules into one sentence. Where the codes conflict (a clause valid under one law and reducible under another), state both and flag `[review]` for the lawyer to decide which governs.
+5. **Research step (when a rule must be quoted or its currency checked).** Use the portal named in `MANIFEST.md` → `research_tool`. For `ksa`: `python3 scripts/fetch-law.py --portal boe --id <guid> --lang ar` (GUIDs in `SOURCES.md`), or `curl -sS https://laws.boe.gov.sa/BoeLaws/Laws/LawDetails/<guid>/1`; the built-in web-fetch tool rejects the portal's TLS chain. Quote the article, tag `[BOE — Arabic]` (or `[BOE — official English]` when quoting the translation), and check the status line and the "تعديلات المادة" block for amendments. If the fetch fails or the article is not found, apply the "no silent supplement" rule: report the failure and stop, or continue with the rule tagged `[model knowledge — verify]` only if the user says so.
+6. **Calendar and language.** Take the weekend, public-holiday, calendar (Hijri or Gregorian) and currency rules from `MANIFEST.md`. Compute every date and roll-back against that calendar, never against a Saturday/Sunday weekend or US federal holidays. Produce the deliverable in English; when the profile's output-language preference is bilingual, or the manifest's authoritative language is not English and counterparty-facing text is produced, add the authoritative-language rendering of the bottom line, the findings table, and any counterparty-facing text, using the spellings in the manifest's `output_language_rule`.
+7. **Header and disclaimer.** Prepend the manifest's `disclaimer` line under the work-product header for every deliverable that applies a non-`usa` jurisdiction. For `ksa`: "Arabic text is authoritative; English translations are for convenience; a licensed Saudi lawyer must review before reliance." with its Arabic rendering from the manifest.
+8. **Record in the reviewer note.** `Jurisdiction: <codes applied>; files: <list>; portal fetched: yes/no; unpopulated codes: <list or none>.`
+
+**Jurisdiction files this skill loads:**
+
+- `references/jurisdictions/<code>/MANIFEST.md` — currency, disclaimer, authoritative language (Step 0; Step 5).
+- The jurisdiction overlay columns in `references/ma-diligence-columns.md` name their source file and article per column (Step 1). For `ksa` they draw on `companies-law.md`, `corporate-governance-regulations.md`, `anti-concealment-law.md`, `investment-law.md`, `saudization-nitaqat.md`, `platform-obligations.md`, `social-insurance-law.md`, `filing-calendar.md`, `ultimate-beneficial-ownership-rules.md`, `competition-law.md`, `commercial-agencies-law.md`, `civil-transactions-law.md`, `personal-data-protection-law.md`, `bankruptcy-law.md`, `government-tenders-procurement-law.md`, `commercial-register-law.md` and `electronic-transactions-law.md`; the rows are listed in that reference file, not repeated here.
+
+---
+
+### Step 0.5: What and where
 
 Confirm:
 1. **Documents.** Where are they? VDR MCP (Box, Datasite, iManage), local folder, Google Drive folder, or a list of files. How many? If >200, warn that this will take a while and offer to start with a materiality-filtered subset.
@@ -105,6 +127,8 @@ Confirm:
 Turn the user's column list into a structured schema. For each column: a stable `id`, a human `label`, a `type`, a `prompt` (the question a reviewer reading the document would ask), and for `classify` columns an `options` list.
 
 Write it to `.review-schema.yaml` next to the output. This file is the reusable artifact — the user can edit it, add a column, re-run against new documents. Show it to the user and confirm before fanning out.
+
+Every schema carries a `jurisdiction_code` column (the code the document's governing law and the target's incorporation resolve to, per Step 0). For each populated non-`usa` code in the matter, offer the optional overlay columns for that code from `references/ma-diligence-columns.md` (each names its source file and article); a column the files cannot support is not offered — the reference file says so and tags it `[no rule in <code> files — verify]`. An unpopulated code is a hard stop for its rows (Step 0, item 3): those documents get `jurisdiction_code` filled and every overlay cell `needs_review` with `not populated — no rule applied` in notes.
 
 ```yaml
 schema:
@@ -172,7 +196,7 @@ For each `classify` column:
 
 For each `date` / `duration` / `currency` column:
 - Check format consistency. Normalize.
-- Flag implausible values (a 99-year term, a $1 cap) as `needs_review`.
+- Flag implausible values (a 99-year term, a [currency] 1 cap) as `needs_review`. `currency` cells keep the document's own currency code; a converted figure in the profile currency goes in notes with the rate the user supplied.
 
 For each `verbatim` column AND for the companion source quotes on every other column:
 - Spot-check by re-opening the source document at the cited `location` for a random sample (at least 3–5 rows per column, or 10% of rows, whichever is larger) and comparing the stored `quote` character-for-character against the source.
@@ -200,7 +224,7 @@ One file for the values, one companion file for the quotes and locations (`_sour
 - A `Verified` column per data column, blank by default. The reviewer marks it. This is the verify/flag pattern that makes the table auditable — the deal team can see at a glance what a human has actually checked.
 - A `_schema` sheet with the column definitions, so the file is self-documenting.
 
-Prepend the work-product header from the plugin config `## Outputs` as a top row. Alongside it, include a distribution note:
+Prepend the work-product header from the plugin config `## Outputs` as a top row, then, for a non-`usa` code, the jurisdiction disclaimer line from the profile `## Jurisdiction` / the manifest. Apply the bilingual house-style rule from `## Outputs`: when the profile's output language is bilingual, the column labels and the `classify` option labels of the findings table are rendered in the authoritative language as well as English (a `_labels` sheet, or a second header row), and the Step 6 summary's bottom line likewise, using the manifest's spellings; verbatim quotes stay in the document's own language. Alongside it, include a distribution note:
 
 > This review is derived from source documents that may be privileged, confidential, or both. It inherits the sources' privilege and confidentiality status — distribution beyond the privilege circle can waive privilege. Store with the matter's privileged files and make distribution decisions deliberately.
 
@@ -211,6 +235,7 @@ After the table is written, give the user a one-screen readout:
 - Count of `not_present`, `unclear`, `needs_review` per column — this is the verification workload
 - Any columns where the normalization pass flagged >10% of rows
 - Where the output files are
+- The reviewer-note line from Step 0 item 8: `Jurisdiction: <codes applied>; files: <list>; portal fetched: yes/no; unpopulated codes: <list or none>`
 - A reminder: every cell is a lead, not a finding. Verification required before this informs a rep, a schedule, or a memo.
 
 ## Close with the next-steps decision tree
