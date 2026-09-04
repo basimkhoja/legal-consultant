@@ -13,7 +13,7 @@ description: >
 # /tabular-review
 
 0. Run Step 0 (resolve the applicable jurisdiction) below; the codes decide which overlay columns `references/ma-diligence-columns.md` offers and the currency of every `currency` cell.
-1. Load `~/.claude/plugins/config/claude-for-legal/corporate-legal/CLAUDE.md` → `## Jurisdiction`, diligence structure, thresholds, house format.
+1. Load `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/corporate-legal/CLAUDE.md` → `## Jurisdiction`, diligence structure, thresholds, house format.
 2. Confirm: what documents, what columns, where does the output go.
 3. Build the typed schema. Write `.review-schema.yaml`. Confirm with the user.
 4. Sample run (3–5 docs). Adjust schema. Confirm.
@@ -42,7 +42,7 @@ description: >
 
 ## Matter context
 
-**Matter context.** Check `## Matter workspaces` in the practice-level CLAUDE.md. If `Enabled` is `✗` (the default for in-house users), skip the rest of this paragraph — skills use practice-level context and the matter machinery is invisible. If enabled and there is no active matter, ask: "Which matter is this for? Run `/corporate-legal:matter-workspace switch <slug>` or say `practice-level`." Load the active matter's `matter.md` for matter-specific context and overrides. Write outputs to the matter folder at `~/.claude/plugins/config/claude-for-legal/corporate-legal/matters/<matter-slug>/`. Never read another matter's files unless `Cross-matter context` is `on`.
+**Matter context.** Check `## Matter workspaces` in the practice-level CLAUDE.md. If `Enabled` is `✗` (the default for in-house users), skip the rest of this paragraph — skills use practice-level context and the matter machinery is invisible. If enabled and there is no active matter, ask: "Which matter is this for? Run `/corporate-legal:matter-workspace switch <slug>` or say `practice-level`." Load the active matter's `matter.md` for matter-specific context and overrides. Write outputs to the matter folder at `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/corporate-legal/matters/<matter-slug>/`. Never read another matter's files unless `Cross-matter context` is `on`.
 
 ---
 
@@ -56,8 +56,8 @@ This is also not a replacement for a human reading the document. Every cell this
 
 ## Load context
 
-- `~/.claude/plugins/config/claude-for-legal/corporate-legal/CLAUDE.md` → diligence structure, materiality thresholds, house format preferences
-- `~/.claude/plugins/config/claude-for-legal/corporate-legal/deals/[code]/deal-context.md` if working a specific deal
+- `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/corporate-legal/CLAUDE.md` → diligence structure, materiality thresholds, house format preferences
+- `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/corporate-legal/deals/[code]/deal-context.md` if working a specific deal
 - An existing schema file if the user has one (`.review-schema.yaml`)
 
 ## The column type system

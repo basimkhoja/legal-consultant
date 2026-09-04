@@ -34,7 +34,7 @@ Surfaces what's renewing and when you have to cancel by.
 - `MANIFEST.md` — the `calendar` row (weekend days, public holidays, Hijri or Gregorian) and the `currency` row. For `ksa` the row reads: Friday-Saturday weekend; Eid al-Fitr, Eid al-Adha, National Day (23 September), Founding Day (22 February); official dates Hijri (Umm al-Qura).
 - `civil-transactions-law.md` — Art. 2 (statutory periods are Hijri; contractual periods are whatever the contract says), Art. 440 (auto-renewal of leases; holding over renews), the auto-renewal absence row (no statutory notice window for B2B service or subscription renewals), Art. 37 (deemed acceptance by silence), Arts. 175-177 (notice by the agreed means).
 
-1. **Read `~/.claude/plugins/config/claude-for-legal/commercial-legal/renewal-register.yaml`** (the config directory — survives plugin updates).
+1. **Read `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/commercial-legal/renewal-register.yaml`** (the config directory — survives plugin updates).
 
 2. **Default mode:** Mode 2 — what's coming up in the next 90 days, grouped by urgency using half-open intervals so each deadline lands in exactly one band: 🔴 0–13 days, 🟠 14–44 days, 🟡 45–89 days. Days 14, 45, and 90 are boundaries — each belongs to exactly one band, not two.
 
@@ -70,7 +70,7 @@ This skill maintains the renewal register and surfaces what's coming.
 
 ## The register
 
-Lives at `~/.claude/plugins/config/claude-for-legal/commercial-legal/renewal-register.yaml` (the config directory — survives plugin updates). Each entry:
+Lives at `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/commercial-legal/renewal-register.yaml` (the config directory — survives plugin updates). Each entry:
 
 ```yaml
 - counterparty: "Acme SaaS Inc."
@@ -205,7 +205,7 @@ For a populated non-`usa` code, say what the jurisdiction file supplies on a mis
 
 Tracking a renewal date is research. *Acting* on it — sending a notice of non-renewal, letting an auto-renewal fire, or countersigning a renewal form — is a consequential legal step.
 
-**Before proceeding to accept or decline a renewal (including sending a non-renewal notice or letting an auto-renewal run past the cancel-by date):** Read `## Who's using this` in `~/.claude/plugins/config/claude-for-legal/commercial-legal/CLAUDE.md`. If the Role is Non-lawyer:
+**Before proceeding to accept or decline a renewal (including sending a non-renewal notice or letting an auto-renewal run past the cancel-by date):** Read `## Who's using this` in `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/commercial-legal/CLAUDE.md`. If the Role is Non-lawyer:
 
 > This step has legal consequences (you're either committing to another term or terminating the relationship). Have you reviewed this with an attorney? If yes, proceed. If no, here's a brief to bring to them:
 >
@@ -217,7 +217,7 @@ Do not proceed past this gate without an explicit yes.
 
 ## Integration: renewal-watcher agent
 
-The renewal-watcher agent in this plugin runs this skill on a schedule (weekly by default) and posts the "coming up" report to the channel named in `~/.claude/plugins/config/claude-for-legal/commercial-legal/CLAUDE.md` → `## House style` → where work product goes. Mode 2 is the agent's primary output.
+The renewal-watcher agent in this plugin runs this skill on a schedule (weekly by default) and posts the "coming up" report to the channel named in `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/commercial-legal/CLAUDE.md` → `## House style` → where work product goes. Mode 2 is the agent's primary output.
 
 ## What this skill does not do
 

@@ -1,0 +1,4 @@
+description = "Review a vendor agreement, NDA, or SaaS subscription against your playbook. Identifies the agreement structure from titles, routes to the right review skill (vendor-agreement-review, nda-review, saas-"
+prompt = """
+Activate the `commercial-legal-review` skill bundled in this extension and run it as written, using the practice profile at ${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/commercial-legal/CLAUDE.md. User input: {{args}}
+"""

@@ -1,0 +1,4 @@
+description = "Show contracts with cancel-by deadlines coming up and warn before notice windows close, working from a maintained renewal register. Use when the user asks 'what's renewing soon', 'what renewals are du"
+prompt = """
+Activate the `commercial-legal-renewal-tracker` skill bundled in this extension and run it as written, using the practice profile at ${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/commercial-legal/CLAUDE.md. User input: {{args}}
+"""

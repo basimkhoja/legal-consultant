@@ -20,11 +20,11 @@ Asks which jurisdiction codes and sub-jurisdictions you have employees in (headc
 /employment-legal:cold-start-interview
 ```
 
-Your configuration is stored at `~/.claude/plugins/config/claude-for-legal/employment-legal/CLAUDE.md` and survives plugin updates.
+Your configuration is stored at `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/employment-legal/CLAUDE.md` and survives plugin updates.
 
 ## Prerequisites
 
-- **Persistent data path.** The leave register, investigation logs, and expansion trackers are written to `~/.claude/plugins/config/claude-for-legal/employment-legal/`, a version-independent path that survives plugin updates. These files contain privileged and sensitive personnel information — make sure that directory is backed up and access-controlled.
+- **Persistent data path.** The leave register, investigation logs, and expansion trackers are written to `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/employment-legal/`, a version-independent path that survives plugin updates. These files contain privileged and sensitive personnel information — make sure that directory is backed up and access-controlled.
 - **Legal research access.** Skills in this plugin do not carry substantive legal rules in their own text. For a populated jurisdiction code the rules are the tagged rows of `references/jurisdictions/<code>/` (cited by article, currency-checked against the primary-source portal named in that jurisdiction's manifest, e.g. `scripts/fetch-law.py --portal boe`); for `usa`, every jurisdiction-specific rule (salary thresholds, restrictive-covenant enforceability, final-pay timing, release consideration periods) is researched and cited at the time of review. An unpopulated jurisdiction is a hard stop, never a fallback to another jurisdiction's rules. Make sure the session has access to the research tools you rely on (the portal script or `curl`, web search, internal legal research integrations, team reference materials).
 - **Outside counsel.** No country-specific or jurisdiction-specific legal advice is produced without outside counsel engagement on any close call or new jurisdiction.
 
@@ -62,7 +62,7 @@ The skills above run when you invoke them — for when you're working a matter. 
 
 ## How it learns
 
-Your practice profile at `~/.claude/plugins/config/claude-for-legal/employment-legal/CLAUDE.md` isn't static — it improves as you use the plugin. Skills tell you when an output used a default you should tune. You can re-run setup, edit the file directly, or tell a skill to record a new position.
+Your practice profile at `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/employment-legal/CLAUDE.md` isn't static — it improves as you use the plugin. Skills tell you when an output used a default you should tune. You can re-run setup, edit the file directly, or tell a skill to record a new position.
 
 ## Notes
 

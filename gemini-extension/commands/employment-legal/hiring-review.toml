@@ -1,0 +1,4 @@
+description = "Review an offer letter or employment contract and any restrictive covenants for the jurisdiction resolved from the practice profile — work-permit, nationalisation-quota, contract-content, probation, s"
+prompt = """
+Activate the `employment-legal-hiring-review` skill bundled in this extension and run it as written, using the practice profile at ${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/employment-legal/CLAUDE.md. User input: {{args}}
+"""

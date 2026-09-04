@@ -12,7 +12,7 @@ argument-hint: '[file path | Drive link | [CLM ID] | paste text]'
 
 # /review
 
-Reviews an inbound agreement against the playbook in `~/.claude/plugins/config/claude-for-legal/commercial-legal/CLAUDE.md`. Identifies the agreement structure from titles, selects the appropriate skill(s), and — if confirm_routing is enabled — checks with the user before proceeding.
+Reviews an inbound agreement against the playbook in `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/commercial-legal/CLAUDE.md`. Identifies the agreement structure from titles, selects the appropriate skill(s), and — if confirm_routing is enabled — checks with the user before proceeding.
 
 ## Instructions
 
@@ -32,9 +32,9 @@ Reviews an inbound agreement against the playbook in `~/.claude/plugins/config/c
 
 **Jurisdiction files this skill loads:** `references/jurisdictions/<code>/MANIFEST.md` (authoritative language, calendar, currency, `research_tool`, `disclaimer`, `output_language_rule`) and `INDEX.md` for every code resolved in Step 0. The router reads no instrument file itself; it passes the resolved codes to the sub-skill, which loads the instrument files named in its own list (for `ksa`: `civil-transactions-law.md`, `electronic-transactions-law.md`, `personal-data-protection-law.md`, `labor-law.md` Art. 83, `government-tenders-procurement-law.md`, `commercial-agencies-law.md`, `arbitration-law.md`, `commercial-courts-law.md`, `enforcement-law.md`). One rule the router states before handing off: for a contract dated before the applicable civil code came into force, state the retroactivity position from `civil-transactions-law.md` (for `ksa`: Royal Decree M/191 para. 5, contracts before 2023-12-16).
 
-1. **Load `~/.claude/plugins/config/claude-for-legal/commercial-legal/CLAUDE.md`.** If placeholders present, stop and prompt: "Run `/commercial-legal:cold-start-interview` first — I need to learn your playbook before I can review against it."
+1. **Load `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/commercial-legal/CLAUDE.md`.** If placeholders present, stop and prompt: "Run `/commercial-legal:cold-start-interview` first — I need to learn your playbook before I can review against it."
 
-   Also read `~/.claude/plugins/config/claude-for-legal/commercial-legal/CLAUDE.md` → `## Review preferences` → `confirm_routing`. If the field is missing, treat it as `true`.
+   Also read `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/commercial-legal/CLAUDE.md` → `## Review preferences` → `confirm_routing`. If the field is missing, treat it as `true`.
 
 2. **Get the agreement:** From file path, Drive link, [CLM ID], or pasted text. If none provided, ask.
 
@@ -81,7 +81,7 @@ Reviews an inbound agreement against the playbook in `~/.claude/plugins/config/c
 
 5. **Confirm routing if enabled.**
 
-   If `confirm_routing` is `true` in `~/.claude/plugins/config/claude-for-legal/commercial-legal/CLAUDE.md` (or field is absent):
+   If `confirm_routing` is `true` in `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/commercial-legal/CLAUDE.md` (or field is absent):
 
    ```
    I'm going to review this as: [agreement type(s)].
@@ -102,7 +102,7 @@ Reviews an inbound agreement against the playbook in `~/.claude/plugins/config/c
 
    **Pass the resolved jurisdiction to the sub-skill.** Hand the sub-skill the Step 0 result as a block at the top of its input so it does not re-resolve: `Jurisdiction: <codes applied>; primary: <code>; manifest language: <language>; calendar: <weekend, holidays, Hijri/Gregorian>; currency: <code>; portal: <url> (reachable yes/no); unpopulated codes: <list or none>; files: <the sub-skill's list from its "Jurisdiction files" block>`. The sub-skill's own Step 0 is satisfied by this block; it runs Step 0 afresh only if the block is missing or the contract's governing-law or forum clause points to a code the block does not carry. If any code in the block is unpopulated, the routing block (step 5) shows the unpopulated-jurisdiction stop verbatim and the review does not start until the user picks one of the three options.
 
-7. **Check for escalations:** If any issue exceeds the reviewer's authority per the `~/.claude/plugins/config/claude-for-legal/commercial-legal/CLAUDE.md` matrix, invoke **escalation-flagger** to route and draft the ask.
+7. **Check for escalations:** If any issue exceeds the reviewer's authority per the `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/commercial-legal/CLAUDE.md` matrix, invoke **escalation-flagger** to route and draft the ask.
 
 8. **Offer follow-ups:**
    - Stakeholder summary for the business owner
@@ -112,7 +112,7 @@ Reviews an inbound agreement against the playbook in `~/.claude/plugins/config/c
 
 ## Configuring confirm_routing
 
-Add to `~/.claude/plugins/config/claude-for-legal/commercial-legal/CLAUDE.md` → `## Review preferences`:
+Add to `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/commercial-legal/CLAUDE.md` → `## Review preferences`:
 
 ```markdown
 ## Review preferences
@@ -139,6 +139,6 @@ The cold-start interview should ask about this preference. Default is `true` —
 
 ## Output
 
-Full review memo per the skill's format. Routing decision logged at the top. Deviation-by-deviation, specific redline language, named approver. Saved where `~/.claude/plugins/config/claude-for-legal/commercial-legal/CLAUDE.md` → House style says work product goes.
+Full review memo per the skill's format. Routing decision logged at the top. Deviation-by-deviation, specific redline language, named approver. Saved where `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/commercial-legal/CLAUDE.md` → House style says work product goes.
 
 **Header, disclaimer, language.** Prepend the work-product header from the practice profile `## Outputs`; directly under it, for every code applied other than `usa`, the jurisdiction disclaimer line from the profile `## Jurisdiction` (the manifest's `disclaimer`, in English and in the authoritative language). Then apply the bilingual house-style rule from the profile `## Outputs`: when the output language is bilingual, or the memo contains counterparty-facing text (redlines, transmittal wording) in a jurisdiction whose authoritative language is not English, add the authoritative-language rendering of the bottom line, the findings table, and every counterparty-facing passage, using the spellings in the manifest's `output_language_rule`. The reviewer note carries the Step 0 record line: `Jurisdiction: <codes applied>; files: <list>; portal fetched: yes/no; unpopulated codes: <list or none>` and, when a title was matched in the authoritative language, `title synonyms: <language>`.

@@ -46,8 +46,8 @@ For this skill, Step 0 is short in practice: the profile's `## Jurisdiction` sec
 ### Steps
 
 1. **Read the config.** Read
-   `~/.claude/plugins/config/claude-for-legal/employment-legal/CLAUDE.md`
-   (and `~/.claude/plugins/config/claude-for-legal/company-profile.md` one
+   `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/employment-legal/CLAUDE.md`
+   (and `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/company-profile.md` one
    level up). If the plugin config does not exist or still contains
    `[PLACEHOLDER]` values, say:
 
@@ -159,7 +159,7 @@ For this skill, Step 0 is short in practice: the profile's `## Jurisdiction` sec
 
 5. **For shared-profile changes** (company name, industry, jurisdictions,
    practice setting, stage): write to
-   `~/.claude/plugins/config/claude-for-legal/company-profile.md` and note:
+   `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/company-profile.md` and note:
 
    > This change affects all 12 plugins — any plugin that reads your
    > jurisdiction footprint now sees [new value].

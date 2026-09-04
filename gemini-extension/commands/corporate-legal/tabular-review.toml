@@ -1,0 +1,4 @@
+description = "Tabular review — one row per document, one column per data point, every cell cited to source. Built for M&A diligence ('review these 200 target contracts for change-of-control, assignment, and MAC cla"
+prompt = """
+Activate the `corporate-legal-tabular-review` skill bundled in this extension and run it as written, using the practice profile at ${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/corporate-legal/CLAUDE.md. User input: {{args}}
+"""

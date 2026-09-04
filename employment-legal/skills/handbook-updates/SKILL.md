@@ -12,7 +12,7 @@ description: >
 
 ## Matter context
 
-**Matter context.** Check `## Matter workspaces` in the practice-level CLAUDE.md. If `Enabled` is `✗` (the default for in-house users), skip the rest of this paragraph — skills use practice-level context and the matter machinery is invisible. If enabled and there is no active matter, ask: "Which matter is this for? Run `/employment-legal:matter-workspace switch <slug>` or say `practice-level`." Load the active matter's `matter.md` for matter-specific context and overrides. Write outputs to the matter folder at `~/.claude/plugins/config/claude-for-legal/employment-legal/matters/<matter-slug>/`. Never read another matter's files unless `Cross-matter context` is `on`.
+**Matter context.** Check `## Matter workspaces` in the practice-level CLAUDE.md. If `Enabled` is `✗` (the default for in-house users), skip the rest of this paragraph — skills use practice-level context and the matter machinery is invisible. If enabled and there is no active matter, ask: "Which matter is this for? Run `/employment-legal:matter-workspace switch <slug>` or say `practice-level`." Load the active matter's `matter.md` for matter-specific context and overrides. Write outputs to the matter folder at `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/employment-legal/matters/<matter-slug>/`. Never read another matter's files unless `Cross-matter context` is `on`.
 
 ---
 
@@ -22,7 +22,7 @@ Handbook changes have ripple effects. Change the PTO policy and you've affected 
 
 ## Load context
 
-`~/.claude/plugins/config/claude-for-legal/employment-legal/CLAUDE.md` → handbook location, jurisdiction supplements list, regulatory approval status, language versions, update cadence.
+`${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/employment-legal/CLAUDE.md` → handbook location, jurisdiction supplements list, regulatory approval status, language versions, update cadence.
 
 ## Workflow
 
@@ -75,7 +75,7 @@ Each cross-reference: does it still make sense after the change? Flag any that b
 
 ### Step 4: Jurisdiction supplement impact
 
-For each jurisdiction supplement in `~/.claude/plugins/config/claude-for-legal/employment-legal/CLAUDE.md` (`## Handbook` → Jurisdiction supplements), on the axis the applicable code uses — `usa`: state; populated code: the axis its files vary on, for `ksa` nationality, sector, gender-specific rules, entity type:
+For each jurisdiction supplement in `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/employment-legal/CLAUDE.md` (`## Handbook` → Jurisdiction supplements), on the axis the applicable code uses — `usa`: state; populated code: the axis its files vary on, for `ksa` nationality, sector, gender-specific rules, entity type:
 
 - Does this supplement modify the section being changed?
 - Does the change make the supplement obsolete, wrong, or incomplete?

@@ -1,0 +1,4 @@
+description = "Draft an audience-specific summary from the privileged investigation memo — HR, leadership, or outside counsel versions. Use when an investigation memo needs to be communicated to an audience that sho"
+prompt = """
+Activate the `employment-legal-investigation-summary` skill bundled in this extension and run it as written, using the practice profile at ${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/employment-legal/CLAUDE.md. User input: {{args}}
+"""

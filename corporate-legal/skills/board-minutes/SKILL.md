@@ -14,7 +14,7 @@ description: >
 
 ## Matter context
 
-**Matter context.** Check `## Matter workspaces` in the practice-level CLAUDE.md. If `Enabled` is `✗` (the default for in-house users), skip the rest of this paragraph — skills use practice-level context and the matter machinery is invisible. If enabled and there is no active matter, ask: "Which matter is this for? Run `/corporate-legal:matter-workspace switch <slug>` or say `practice-level`." Load the active matter's `matter.md` for matter-specific context and overrides. Write outputs to the matter folder at `~/.claude/plugins/config/claude-for-legal/corporate-legal/matters/<matter-slug>/`. Never read another matter's files unless `Cross-matter context` is `on`.
+**Matter context.** Check `## Matter workspaces` in the practice-level CLAUDE.md. If `Enabled` is `✗` (the default for in-house users), skip the rest of this paragraph — skills use practice-level context and the matter machinery is invisible. If enabled and there is no active matter, ask: "Which matter is this for? Run `/corporate-legal:matter-workspace switch <slug>` or say `practice-level`." Load the active matter's `matter.md` for matter-specific context and overrides. Write outputs to the matter folder at `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/corporate-legal/matters/<matter-slug>/`. Never read another matter's files unless `Cross-matter context` is `on`.
 
 ---
 
@@ -24,13 +24,13 @@ Board minutes are a legal record. They need to be accurate, complete, and in a f
 
 ## Load context
 
-- `~/.claude/plugins/config/claude-for-legal/corporate-legal/CLAUDE.md` → `## Jurisdiction` (Step 0) and `## Company profile` (legal form under the local companies law; listed-company regulator)
-- `~/.claude/plugins/config/claude-for-legal/corporate-legal/CLAUDE.md` → `## Board & Secretary` section:
+- `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/corporate-legal/CLAUDE.md` → `## Jurisdiction` (Step 0) and `## Company profile` (legal form under the local companies law; listed-company regulator)
+- `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/corporate-legal/CLAUDE.md` → `## Board & Secretary` section:
   - Minutes format (long-form narrative / action minutes / hybrid)
   - Minutes template extracted from seed documents (structure, resolution language, header format)
   - Board composition and committees
   - Written consents — what they're used for and any limits
-- If `~/.claude/plugins/config/claude-for-legal/corporate-legal/CLAUDE.md` has no minutes format: run cold-start first. Do not proceed with a generic format.
+- If `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/corporate-legal/CLAUDE.md` has no minutes format: run cold-start first. Do not proceed with a generic format.
 
 ---
 
@@ -110,7 +110,7 @@ Where a row must be quoted or its currency checked, use the research step: `pyth
 Ask for the attendee list, or offer to pull from the calendar invite if the connector is authorized.
 
 **Directors present:**
-- Pull from board composition in `~/.claude/plugins/config/claude-for-legal/corporate-legal/CLAUDE.md` as the starting point
+- Pull from board composition in `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/corporate-legal/CLAUDE.md` as the starting point
 - Ask who was actually present, who was absent, and whether any absent directors had advance notice
 
 **Management present:**
@@ -153,7 +153,7 @@ Ask for the meeting materials. These are the source for the agenda items and any
 
 ## Step 4: Draft the minutes
 
-Use the house format from `~/.claude/plugins/config/claude-for-legal/corporate-legal/CLAUDE.md`. Do not default to a generic format. The seed minutes are the template — replicate the structure, the header, the resolution language, the level of discussion detail. For a populated non-`usa` code, the skeleton must also carry every item Step 1.5 requires the record to contain (for `ksa`: place, date, start and end times, attendance, votes, named dissents, interest declarations, and the signature lines for the chair, every attending director and the secretary per `companies-law.md` Art. 83 / CGR Art. 35) — the house format decides the wording, the file decides what may not be omitted. Language of record per Step 1.5.
+Use the house format from `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/corporate-legal/CLAUDE.md`. Do not default to a generic format. The seed minutes are the template — replicate the structure, the header, the resolution language, the level of discussion detail. For a populated non-`usa` code, the skeleton must also carry every item Step 1.5 requires the record to contain (for `ksa`: place, date, start and end times, attendance, votes, named dissents, interest declarations, and the signature lines for the chair, every attending director and the secretary per `companies-law.md` Art. 83 / CGR Art. 35) — the house format decides the wording, the file decides what may not be omitted. Language of record per Step 1.5.
 
 ### Standard structure (adapt to house format)
 
@@ -179,7 +179,7 @@ OF [COMPANY NAME]
 - Also present: [management, outside counsel, guests — with roles]
 
 **Previous minutes:**
-Standard language: approval of minutes from prior meeting. Pull date of prior meeting from `~/.claude/plugins/config/claude-for-legal/corporate-legal/CLAUDE.md` board calendar if available, otherwise leave as [DATE OF PRIOR MEETING].
+Standard language: approval of minutes from prior meeting. Pull date of prior meeting from `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/corporate-legal/CLAUDE.md` board calendar if available, otherwise leave as [DATE OF PRIOR MEETING].
 
 **Agenda items — one section per item:**
 
@@ -193,7 +193,7 @@ Standard language: approval of minutes from prior meeting. Pull date of prior me
 [If resolution follows:]
 Upon motion duly made and seconded, the following resolution was adopted [by unanimous vote / by a vote of N for, N against, N abstaining]:
 
-RESOLVED, that [resolution text in house language from `~/.claude/plugins/config/claude-for-legal/corporate-legal/CLAUDE.md`].
+RESOLVED, that [resolution text in house language from `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/corporate-legal/CLAUDE.md`].
 ```
 
 **Adjournment:**
@@ -224,7 +224,7 @@ When no materials: insert `[PLACEHOLDER — summarize discussion here]` and flag
 
 ## Step 4.5: Consequential-action gate (adopt minutes)
 
-**Before adopting minutes as final:** Read `## Who's using this` in `~/.claude/plugins/config/claude-for-legal/corporate-legal/CLAUDE.md`. If the Role is **Non-lawyer**:
+**Before adopting minutes as final:** Read `## Who's using this` in `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/corporate-legal/CLAUDE.md`. If the Role is **Non-lawyer**:
 
 > Adopting minutes makes them the official record of what the board decided — they're the primary evidence of authorization for the actions taken at the meeting. Have you reviewed this with an attorney? If yes, proceed. If no, here's a brief to bring to them:
 >
@@ -242,7 +242,7 @@ Do not produce the final adoption-ready version past this gate without an explic
 
 ## Step 5: Output and review prompts
 
-Produce the full draft. The minutes themselves are a corporate record, not privileged; do not apply the work-product header to the minutes as circulated. The drafting notes, placeholder flags, and review checklist below are work product — prepend the work-product header from `~/.claude/plugins/config/claude-for-legal/corporate-legal/CLAUDE.md` `## Outputs` (it differs by user role — see `## Who's using this`), then, for a non-`usa` code, the jurisdiction disclaimer line from the profile `## Jurisdiction` / the manifest. Apply the bilingual house-style rule from `## Outputs`: when the profile's output language is bilingual, or Step 1.5 set the language of record to bilingual, the minutes (a record that will be filed or inspected in the authoritative language) are rendered in that language beside the English, and the bottom line of the drafting notes and the review checklist table likewise, using the manifest's spellings; amounts in resolutions are in the profile currency and dates follow the manifest's calendar.
+Produce the full draft. The minutes themselves are a corporate record, not privileged; do not apply the work-product header to the minutes as circulated. The drafting notes, placeholder flags, and review checklist below are work product — prepend the work-product header from `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/corporate-legal/CLAUDE.md` `## Outputs` (it differs by user role — see `## Who's using this`), then, for a non-`usa` code, the jurisdiction disclaimer line from the profile `## Jurisdiction` / the manifest. Apply the bilingual house-style rule from `## Outputs`: when the profile's output language is bilingual, or Step 1.5 set the language of record to bilingual, the minutes (a record that will be filed or inspected in the authoritative language) are rendered in that language beside the English, and the bottom line of the drafting notes and the review checklist table likewise, using the manifest's spellings; amounts in resolutions are in the profile currency and dates follow the manifest's calendar.
 
 ```
 [WORK-PRODUCT HEADER — per plugin config ## Outputs — differs by role; see `## Who's using this`]

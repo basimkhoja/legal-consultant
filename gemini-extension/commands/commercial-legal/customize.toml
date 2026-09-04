@@ -1,0 +1,4 @@
+description = "Guided customization of your commercial contracts practice profile — change one thing without re-running the whole cold-start interview. Adjust risk posture, escalation contacts, playbook positions, N"
+prompt = """
+Activate the `commercial-legal-customize` skill bundled in this extension and run it as written, using the practice profile at ${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/commercial-legal/CLAUDE.md. User input: {{args}}
+"""

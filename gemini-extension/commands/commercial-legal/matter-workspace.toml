@@ -1,0 +1,4 @@
+description = "Manage matter workspaces — new, list, switch, close, or detach (practice-level). Use when a multi-client practitioner needs to create a matter, switch the active matter, list matters, archive a matter"
+prompt = """
+Activate the `commercial-legal-matter-workspace` skill bundled in this extension and run it as written, using the practice profile at ${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/commercial-legal/CLAUDE.md. User input: {{args}}
+"""

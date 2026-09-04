@@ -1,0 +1,4 @@
+description = "Jurisdiction-aware wage/hour and employment Q&A — working hours, overtime, rest and leave, wage payment, deductions, final settlement, limitation — answered for the jurisdiction resolved from the prac"
+prompt = """
+Activate the `employment-legal-wage-hour-qa` skill bundled in this extension and run it as written, using the practice profile at ${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/employment-legal/CLAUDE.md. User input: {{args}}
+"""

@@ -12,7 +12,7 @@ argument-hint: "[describe the leave — employee/role, type, jurisdiction, start
 
 # /log-leave
 
-Adds a new leave entry to `~/.claude/plugins/config/claude-for-legal/employment-legal/leave-register.yaml` with the minimum
+Adds a new leave entry to `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/employment-legal/leave-register.yaml` with the minimum
 information needed to start tracking deadlines. Use when an employee goes on
 leave and you want the tracker to watch the clocks from day one.
 
@@ -41,7 +41,7 @@ leave and you want the tracker to watch the clocks from day one.
 - `references/jurisdictions/<code>/occupational-safety.md` — Art. 137 (work-injury absence: 60 days full wage then 75%; one-year total-disability rule), Art. 82.
 - `references/jurisdictions/<code>/labor-dispute-route.md` — the "Computed dates" rules (calendar election under Annex 5 cl. 14.6, otherwise Hijri per Art. 10).
 
-1. Read `~/.claude/plugins/config/claude-for-legal/employment-legal/CLAUDE.md` → `## Jurisdiction`, jurisdiction table and Systems section.
+1. Read `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/employment-legal/CLAUDE.md` → `## Jurisdiction`, jurisdiction table and Systems section.
 
 2. Ask all of the following in a single prompt — do not drip them one at a time. The leave-type list and the clock questions depend on the code resolved in Step 0:
 
@@ -57,7 +57,7 @@ leave and you want the tracker to watch the clocks from day one.
    > - Populated code, for `ksa`: is the illness proven by a certificate from the establishment's doctor or an approved medical body (Art. 117; Reg. Art. 26)? For maternity: the expected delivery date on a certified medical certificate and the actual delivery date once known (Art. 151). For marriage, bereavement, paternity, Hajj or exam leave: the event date and the supporting document (Arts. 113-115). For unpaid leave: the agreed length (Art. 116). For compensatory leave: the overtime date and hours and the agreed leave amount (Reg. Art. 22 bis).
 
 3. Look up the entitlement:
-   - `usa`: using the jurisdiction table in `~/.claude/plugins/config/claude-for-legal/employment-legal/CLAUDE.md`, look up the applicable leave entitlement (hours/weeks) for this leave type in this jurisdiction.
+   - `usa`: using the jurisdiction table in `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/employment-legal/CLAUDE.md`, look up the applicable leave entitlement (hours/weeks) for this leave type in this jurisdiction.
    - Populated code: from the jurisdiction file rows, cited by article with the row's tag. For `ksa`: annual 21 days (30 after five consecutive years), on the day basis the contract form uses (Annex 5 cl. 8.1 working days; the Law's wording is calendar days — state which basis the register uses and tag `[model knowledge — verify]` per the Art. 109 row); sick 30 days full pay, 60 at three-quarters, 30 unpaid, in a year from the first sick day (Art. 117); maternity 12 weeks at full pay, six weeks after delivery compulsory, at most four weeks before the expected date, one unpaid month extension, one paid month for a sick or disabled child (Art. 151); marriage 5 days, death of spouse, ascendant or descendant 5 days, sibling 3 days, paternity 3 days within seven days of birth (Art. 113); Hajj 10-15 days once, after two consecutive years (Art. 114); exam leave for the actual exam days (Art. 115); iddah four months and ten days, or 15 days for a non-Muslim worker (Art. 160); unpaid leave as agreed, contract suspended beyond 20 days (Art. 116, Reg. Art. 25); compensatory leave at not less than 1.5 hours per overtime hour, capped at 30 days a year (Reg. Art. 22 bis); work-injury absence at full wage for 60 days then 75% (Art. 137 via `occupational-safety.md`, only where the fund does not pay — `social-insurance-law.md` Art. 33). **Row missing:** if the leave type has no row in the file, say so, tag `[no rule in <code> files — verify]`, and log it with `entitlement: unknown` rather than inventing one. **Unpopulated code:** the Step 0 stop; do not log against another jurisdiction's entitlements.
 
 4. Compute the first upcoming deadline based on the information provided, on the calendar in the manifest (for a populated code) — never on a Saturday/Sunday weekend or US federal holidays:
@@ -76,7 +76,7 @@ leave and you want the tracker to watch the clocks from day one.
      - Work injury: day 61 (aid drops to 75%) and the one-year total-disability point (Art. 137); the fund's reporting deadline is `[model knowledge — verify]` (`social-insurance-law.md` Art. 33 row).
    - For another populated code, the clocks in that code's leave rows; where the file names none for the leave type, log `next_deadline: none in file` and tag `[no rule in <code> files — verify]`.
 
-5. Write a new entry to `~/.claude/plugins/config/claude-for-legal/employment-legal/leave-register.yaml` using the leave register
+5. Write a new entry to `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/employment-legal/leave-register.yaml` using the leave register
    format from the leave-tracker agent (`jurisdiction_code`, `regime_code`, and the generic `clocks[]` list with name, owner, due date and source tag; the FMLA-shaped fields are filled only for `usa`). If the file doesn't exist, create it.
 
 6. Confirm with a single line (add the authoritative-language rendering when the profile's output language is bilingual, per CLAUDE.md `## Outputs`):

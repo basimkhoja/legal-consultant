@@ -1,0 +1,4 @@
+description = "Classify a proposed worker engagement — employee, contractor, seconded, agency or outsourced — by running the tests and categories of the jurisdiction resolved from the practice profile (jurisdiction-"
+prompt = """
+Activate the `employment-legal-worker-classification` skill bundled in this extension and run it as written, using the practice profile at ${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/employment-legal/CLAUDE.md. User input: {{args}}
+"""

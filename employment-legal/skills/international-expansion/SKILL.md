@@ -12,7 +12,7 @@ user-invocable: false
 
 ## Matter context
 
-**Matter context.** Check `## Matter workspaces` in the practice-level CLAUDE.md. If `Enabled` is `✗` (the default for in-house users), skip the rest of this paragraph — skills use practice-level context and the matter machinery is invisible. If enabled and there is no active matter, ask: "Which matter is this for? Run `/employment-legal:matter-workspace switch <slug>` or say `practice-level`." Load the active matter's `matter.md` for matter-specific context and overrides. Write outputs to the matter folder at `~/.claude/plugins/config/claude-for-legal/employment-legal/matters/<matter-slug>/`. Never read another matter's files unless `Cross-matter context` is `on`.
+**Matter context.** Check `## Matter workspaces` in the practice-level CLAUDE.md. If `Enabled` is `✗` (the default for in-house users), skip the rest of this paragraph — skills use practice-level context and the matter machinery is invisible. If enabled and there is no active matter, ask: "Which matter is this for? Run `/employment-legal:matter-workspace switch <slug>` or say `practice-level`." Load the active matter's `matter.md` for matter-specific context and overrides. Write outputs to the matter folder at `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/employment-legal/matters/<matter-slug>/`. Never read another matter's files unless `Cross-matter context` is `on`.
 
 ---
 
@@ -40,12 +40,12 @@ on a stored reference table.
 
 ## Load context
 
-Read `~/.claude/plugins/config/claude-for-legal/employment-legal/CLAUDE.md` → jurisdictional footprint, escalation table, any existing
+Read `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/employment-legal/CLAUDE.md` → jurisdictional footprint, escalation table, any existing
 expansion notes.
 
 ## Output header
 
-Prepend the work-product header from `~/.claude/plugins/config/claude-for-legal/employment-legal/CLAUDE.md` → `## Outputs` (it differs by user role — see `## Who's using this`).
+Prepend the work-product header from `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/employment-legal/CLAUDE.md` → `## Outputs` (it differs by user role — see `## Who's using this`).
 
 ## Workflow
 
@@ -63,7 +63,7 @@ Prepend the work-product header from `~/.claude/plugins/config/claude-for-legal/
 7. **Header and disclaimer.** Prepend the manifest's `disclaimer` line under the work-product header for every deliverable that applies a non-`usa` jurisdiction. For `ksa`: "Arabic text is authoritative; English translations are for convenience; a licensed Saudi lawyer must review before reliance." with its Arabic rendering from the manifest.
 8. **Record in the reviewer note.** `Jurisdiction: <codes applied>; files: <list>; portal fetched: yes/no; unpopulated codes: <list or none>.`
 
-For this skill the "matter" in item 2 is the expansion itself: the target country named at intake is the matter's jurisdiction, and the company's home country (the HQ country in `~/.claude/plugins/config/claude-for-legal/company-profile.md`) is a second code where a question turns on the parent (intercompany agreements, employee-data transfers). Resolve both.
+For this skill the "matter" in item 2 is the expansion itself: the target country named at intake is the matter's jurisdiction, and the company's home country (the HQ country in `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/company-profile.md`) is a second code where a question turns on the parent (intercompany agreements, employee-data transfers). Resolve both.
 
 **Jurisdiction files this skill loads** (for a populated target code; every article reference below is a pointer to a row of the named file, and the file's own tag travels with anything taken from it):
 
@@ -183,7 +183,7 @@ Questions legal should ask:
   local tax counsel to advise employees at grant and vesting?
 - If we set up an entity, what intercompany services agreement is needed
   between the subsidiary and the parent per the company profile (HQ country
-  from `~/.claude/plugins/config/claude-for-legal/company-profile.md`)?
+  from `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/company-profile.md`)?
 
 **Finance / Payroll** (required before first paycheck)
 
@@ -315,7 +315,7 @@ contact.
 
 ### Step 5 — Create the expansion tracker
 
-Write a new file to `~/.claude/plugins/config/claude-for-legal/employment-legal/expansion-[country-slug].yaml` with all open items
+Write a new file to `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/employment-legal/expansion-[country-slug].yaml` with all open items
 identified in Steps 2-4. This file persists across sessions.
 
 Format:
@@ -367,7 +367,7 @@ attributable to a single owner.
 **First hire target:** [date]
 **Headcount (12 months):** [N]
 **Roles:** [list]
-**Tracker:** ~/.claude/plugins/config/claude-for-legal/employment-legal/expansion-[slug].yaml
+**Tracker:** ${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/employment-legal/expansion-[slug].yaml
 **Jurisdiction:** [code(s) from Step 0 — populated / unpopulated / usa; files loaded]
 
 ---

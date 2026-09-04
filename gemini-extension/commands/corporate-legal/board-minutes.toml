@@ -1,0 +1,4 @@
+description = "Drafts board or committee meeting minutes in your house format. Auto-detects upcoming board and committee meetings from your calendar, asks for the agenda and any slides or pre-read materials, and pro"
+prompt = """
+Activate the `corporate-legal-board-minutes` skill bundled in this extension and run it as written, using the practice profile at ${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/corporate-legal/CLAUDE.md. User input: {{args}}
+"""

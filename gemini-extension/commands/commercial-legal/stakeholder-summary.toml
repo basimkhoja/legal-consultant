@@ -1,0 +1,4 @@
+description = "Translates a contract review into a summary the business stakeholder will actually read. Not a legal memo — a two-minute answer to 'can I sign this and what do I need to know.' Use when user says 'sum"
+prompt = """
+Activate the `commercial-legal-stakeholder-summary` skill bundled in this extension and run it as written, using the practice profile at ${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/commercial-legal/CLAUDE.md. User input: {{args}}
+"""

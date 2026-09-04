@@ -73,7 +73,7 @@ controlling language.
 
 ## Matter context
 
-**Matter context.** Check `## Matter workspaces` in the practice-level CLAUDE.md. If `Enabled` is `✗` (the default for in-house users), skip the rest of this paragraph — skills use practice-level context and the matter machinery is invisible. If enabled and there is no active matter, ask: "Which matter is this for? Run `/commercial-legal:matter-workspace switch <slug>` or say `practice-level`." Load the active matter's `matter.md` for matter-specific context and overrides. Write outputs to the matter folder at `~/.claude/plugins/config/claude-for-legal/commercial-legal/matters/<matter-slug>/`. Never read another matter's files unless `Cross-matter context` is `on`.
+**Matter context.** Check `## Matter workspaces` in the practice-level CLAUDE.md. If `Enabled` is `✗` (the default for in-house users), skip the rest of this paragraph — skills use practice-level context and the matter machinery is invisible. If enabled and there is no active matter, ask: "Which matter is this for? Run `/commercial-legal:matter-workspace switch <slug>` or say `practice-level`." Load the active matter's `matter.md` for matter-specific context and overrides. Write outputs to the matter folder at `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/commercial-legal/matters/<matter-slug>/`. Never read another matter's files unless `Cross-matter context` is `on`.
 
 ---
 
@@ -163,7 +163,7 @@ top of the output only where uncertain:
 
 ## Privilege inheritance
 
-This skill reads the base agreement and amendments — often privileged or confidential in their own right, and typically used for privileged analysis. The output inherits the source's privilege and confidentiality status. Prepend the work-product header from `~/.claude/plugins/config/claude-for-legal/commercial-legal/CLAUDE.md` `## Outputs` to every output below, distribute only within the privilege circle, and store it where privileged materials live. Strip the header before any external delivery.
+This skill reads the base agreement and amendments — often privileged or confidential in their own right, and typically used for privileged analysis. The output inherits the source's privilege and confidentiality status. Prepend the work-product header from `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/commercial-legal/CLAUDE.md` `## Outputs` to every output below, distribute only within the privilege circle, and store it where privileged materials live. Strip the header before any external delivery.
 
 **Disclaimer and language.** Directly under the header, for every code applied other than `usa`, add the jurisdiction disclaimer line from the profile `## Jurisdiction`; it is never stripped. Apply the bilingual house-style rule from the profile `## Outputs`: when the output language is bilingual, or the amendments are in a jurisdiction whose authoritative language is not English and the trace quotes their text, add the authoritative-language rendering of the "Net current state" table (Mode 1) or the "Current controlling language" block (Mode 2), using the spellings in the manifest's `output_language_rule`. Where an amendment exists in two languages, quote the text the contract says prevails and note the other; if the contract is silent on which prevails, flag `[review]` (for `ksa`, `playbook-defaults.md` records the practice position as `[model knowledge — verify]`). Amounts are written in `[currency]` from the profile; dates are Gregorian with the Hijri date alongside when an amendment is dated in the Hijri calendar per the manifest. The reviewer note carries the Step 0 record line.
 
@@ -316,7 +316,7 @@ End with the next-steps decision tree per CLAUDE.md `## Outputs`. Customize the 
   conflict between the base agreement and an amendment — that is a
   legal interpretation question. It flags conflicts and routes to Legal.
 - It does not draft new amendments.
-- It does not compare against the playbook in `~/.claude/plugins/config/claude-for-legal/commercial-legal/CLAUDE.md` — that is the
+- It does not compare against the playbook in `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/commercial-legal/CLAUDE.md` — that is the
   vendor-agreement-review skill's job. This skill is purely historical.
 - It does not infer what an amendment means if the language is
   ambiguous — it quotes exactly and flags ambiguity for Legal.

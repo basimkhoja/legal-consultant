@@ -1,0 +1,4 @@
+description = "Build the material contracts disclosure schedule from diligence findings, applying the purchase agreement's Material Contract definition and formatting per the agreement's schedule format. Use when us"
+prompt = """
+Activate the `corporate-legal-material-contract-schedule` skill bundled in this extension and run it as written, using the practice profile at ${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/corporate-legal/CLAUDE.md. User input: {{args}}
+"""

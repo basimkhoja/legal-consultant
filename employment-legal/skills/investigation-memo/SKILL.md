@@ -19,7 +19,7 @@ or updates an existing draft when new data has been added.
    open on the checklist.
 3. If updating, show what changed before rewriting.
 4. All output opens with the work-product header from
-   `~/.claude/plugins/config/claude-for-legal/employment-legal/CLAUDE.md` →
+   `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/employment-legal/CLAUDE.md` →
    `## Outputs` (it differs by user role and by jurisdiction footprint — do
    not hard-code a US "attorney work product" marking), followed, for every
    jurisdiction other than `usa` applied per the reference skill's Step 0, by

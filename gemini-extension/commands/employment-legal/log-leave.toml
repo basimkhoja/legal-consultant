@@ -1,0 +1,4 @@
+description = "Add a new leave to the leave register with the minimum information needed to start tracking the statutory clocks of the applicable jurisdiction (for `usa`: designation, certification and exhaustion; f"
+prompt = """
+Activate the `employment-legal-log-leave` skill bundled in this extension and run it as written, using the practice profile at ${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/employment-legal/CLAUDE.md. User input: {{args}}
+"""

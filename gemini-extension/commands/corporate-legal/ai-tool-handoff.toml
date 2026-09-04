@@ -1,0 +1,4 @@
+description = "Detects when Luminance, Kira, or a similar bulk-review tool is in use, hands off the high-volume clause extraction to it, and QAs its output per the trust level in `${LEGAL_CONSULTANT_HOME:-~/.legal-c"
+prompt = """
+Activate the `corporate-legal-ai-tool-handoff` skill bundled in this extension and run it as written, using the practice profile at ${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/corporate-legal/CLAUDE.md. User input: {{args}}
+"""

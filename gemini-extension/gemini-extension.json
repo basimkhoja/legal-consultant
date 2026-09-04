@@ -1,0 +1,6 @@
+{
+  "name": "legal-consultant",
+  "version": "2.0.0",
+  "description": "Jurisdiction-pluggable legal assistant for commercial, corporate, and employment work (fork of claude-for-legal).",
+  "contextFileName": "GEMINI.md"
+}

@@ -1,0 +1,4 @@
+description = "Reference: review of an inbound vendor agreement against the team playbook in `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/commercial-legal/CLAUDE.md`. Flags deviations, assesses risk, generates spe"
+prompt = """
+Activate the `commercial-legal-vendor-agreement-review` skill bundled in this extension and run it as written, using the practice profile at ${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/commercial-legal/CLAUDE.md. User input: {{args}}
+"""

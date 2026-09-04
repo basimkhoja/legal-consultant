@@ -1,0 +1,4 @@
+description = "Reference: fast triage of inbound NDAs into GREEN / YELLOW / RED so the team only spends lawyer time on the ones that need it. Built for sales and BD to self-serve before pinging legal. Loaded by /com"
+prompt = """
+Activate the `commercial-legal-nda-review` skill bundled in this extension and run it as written, using the practice profile at ${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/commercial-legal/CLAUDE.md. User input: {{args}}
+"""

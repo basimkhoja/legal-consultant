@@ -14,11 +14,11 @@ argument-hint: "[describe the action needing board approval]"
 # /written-consent
 
 0. Run Step 0 (resolve the applicable jurisdiction) below; the jurisdiction of incorporation of the entity passing the resolution decides Step 4.
-1. Load `~/.claude/plugins/config/claude-for-legal/corporate-legal/CLAUDE.md` → `## Jurisdiction`, `## Company profile` (legal form, listed-company regulator) and Board & Secretary (consents repository, resolution language, board composition).
+1. Load `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/corporate-legal/CLAUDE.md` → `## Jurisdiction`, `## Company profile` (legal form, listed-company regulator) and Board & Secretary (consents repository, resolution language, board composition).
 2. Use the workflow below.
 3. Identify the action and classify (routine / review-flag).
 4. If review-flag: show outside counsel warning and confirm before proceeding.
-5. Search consents repository for closest precedent. If no repository: use seed consents from `~/.claude/plugins/config/claude-for-legal/corporate-legal/CLAUDE.md`.
+5. Search consents repository for closest precedent. If no repository: use seed consents from `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/corporate-legal/CLAUDE.md`.
 6. Draft consent in house format using precedent as base.
 7. Output: consent draft + signatory checklist + review prompts.
 
@@ -26,7 +26,7 @@ argument-hint: "[describe the action needing board approval]"
 
 ## Matter context
 
-**Matter context.** Check `## Matter workspaces` in the practice-level CLAUDE.md. If `Enabled` is `✗` (the default for in-house users), skip the rest of this paragraph — skills use practice-level context and the matter machinery is invisible. If enabled and there is no active matter, ask: "Which matter is this for? Run `/corporate-legal:matter-workspace switch <slug>` or say `practice-level`." Load the active matter's `matter.md` for matter-specific context and overrides. Write outputs to the matter folder at `~/.claude/plugins/config/claude-for-legal/corporate-legal/matters/<matter-slug>/`. Never read another matter's files unless `Cross-matter context` is `on`.
+**Matter context.** Check `## Matter workspaces` in the practice-level CLAUDE.md. If `Enabled` is `✗` (the default for in-house users), skip the rest of this paragraph — skills use practice-level context and the matter machinery is invisible. If enabled and there is no active matter, ask: "Which matter is this for? Run `/corporate-legal:matter-workspace switch <slug>` or say `practice-level`." Load the active matter's `matter.md` for matter-specific context and overrides. Write outputs to the matter folder at `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/corporate-legal/matters/<matter-slug>/`. Never read another matter's files unless `Cross-matter context` is `on`.
 
 ---
 
@@ -74,7 +74,7 @@ Do not proceed to Step 1 or any drafting under this gate without an explicit res
 
 ## Load context
 
-- `~/.claude/plugins/config/claude-for-legal/corporate-legal/CLAUDE.md` → `## Board & Secretary`:
+- `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/corporate-legal/CLAUDE.md` → `## Board & Secretary`:
   - Consents repository location
   - House resolution language
   - Jurisdiction code of incorporation and local entity type of the entity passing the resolution (from `## Company profile` or the `## Entity Management` entity table) — these drive the notice, majority and form questions in Step 4; whether the entity is listed (from `## Company profile` → listed-company regulator)
@@ -134,7 +134,7 @@ Ask the user what action the board needs to approve. Gather:
 - **What is being approved?** (One sentence.)
 - **Any supporting detail?** For example: the name of the officer being appointed, the grant amount and price for an equity grant, the counterparty and contract value for a contract approval.
 - **Effective date:** Today, or a specific date?
-- **Signatories:** Full board, or a specific committee? If the `~/.claude/plugins/config/claude-for-legal/corporate-legal/CLAUDE.md` written-consent scope says certain actions require a meeting rather than consent, flag it now.
+- **Signatories:** Full board, or a specific committee? If the `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/corporate-legal/CLAUDE.md` written-consent scope says certain actions require a meeting rather than consent, flag it now.
 - **Any director conflict?** Does any director have a material interest in the action being approved? If yes: flag it. Whether the conflicted director may still sign, and whether the director counts toward the majority, depends on the applicable jurisdiction file and the nature of the conflict: for a populated non-`usa` code, apply the file's rows (for `ksa`: `companies-law.md` Art. 71 — disclosure recorded and abstention from the vote; Art. 27 with Regs Arts. 16-17 — assembly authorisation above the thresholds; for a listed JSC, `corporate-governance-regulations.md` Art. 42 — the conflicted director is excluded from the count, and Art. 28(14)-(15)); for `usa`, state law. The consent should disclose it and the user should confirm.
 
 ### Action classification
@@ -187,7 +187,7 @@ Search the repository for the closest prior consent. Search strategy:
 
 ### If no repository (seed documents only)
 
-Extract the format from the seed consents in `~/.claude/plugins/config/claude-for-legal/corporate-legal/CLAUDE.md`. Note that no precedent search is available — the draft will follow house format but without substantive precedent matching. Flag this to the user:
+Extract the format from the seed consents in `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/corporate-legal/CLAUDE.md`. Note that no precedent search is available — the draft will follow house format but without substantive precedent matching. Flag this to the user:
 
 > No consents repository is connected, so I'm working from your seed documents for format. For this action type specifically, you may want to check whether you have a prior consent to use as a substantive starting point.
 
@@ -354,17 +354,17 @@ If the articles of association are not available, say so in the output: "Statuto
 
 ### When the applicable code is `usa`
 
-Check the state of incorporation in `~/.claude/plugins/config/claude-for-legal/corporate-legal/CLAUDE.md`. Research the written-consent requirements for that state before drafting, using the upstream research connectors. Cite the controlling statute section and any charter/bylaw provisions relied on. Verify currency — state corporate codes are amended regularly. Flag uncertainty for attorney verification rather than stating a rule you haven't confirmed.
+Check the state of incorporation in `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/corporate-legal/CLAUDE.md`. Research the written-consent requirements for that state before drafting, using the upstream research connectors. Cite the controlling statute section and any charter/bylaw provisions relied on. Verify currency — state corporate codes are amended regularly. Flag uncertainty for attorney verification rather than stating a rule you haven't confirmed.
 
 ### In every case
 
-If `~/.claude/plugins/config/claude-for-legal/corporate-legal/CLAUDE.md` records a house position on any of these questions, apply it and note the legal backstop being relied on. Add a short "Jurisdiction rule" block to the output summarizing what you confirmed (or flagged) — file and article for a non-`usa` code, statute section for `usa` — so the user isn't left wondering.
+If `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/corporate-legal/CLAUDE.md` records a house position on any of these questions, apply it and note the legal backstop being relied on. Add a short "Jurisdiction rule" block to the output summarizing what you confirmed (or flagged) — file and article for a non-`usa` code, statute section for `usa` — so the user isn't left wondering.
 
 ---
 
 ## Step 4.5: Consequential-action gate (execute consent)
 
-**Before proceeding to output:** Read `## Who's using this` in `~/.claude/plugins/config/claude-for-legal/corporate-legal/CLAUDE.md`. If the Role is **Non-lawyer**:
+**Before proceeding to output:** Read `## Who's using this` in `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/corporate-legal/CLAUDE.md`. If the Role is **Non-lawyer**:
 
 > Executing a written consent has legal consequences — it binds the entity and becomes a corporate record. Have you reviewed this with an attorney? If yes, proceed. If no, here's a brief to bring to them:
 >
@@ -384,7 +384,7 @@ Do not produce the final signatory-ready draft past this gate without an explici
 
 Produce:
 
-1. **The consent draft** — complete, ready to review and circulate. The executed written consent itself is a corporate record, not privileged; do not apply the work-product header to the consent as circulated. The drafting notes, signatory tracker, and analysis below are work product — prepend the work-product header from `~/.claude/plugins/config/claude-for-legal/corporate-legal/CLAUDE.md` `## Outputs` (it differs by user role — see `## Who's using this`), then, for a non-`usa` code, the jurisdiction disclaimer line from the profile `## Jurisdiction` / the manifest, and apply the bilingual house-style rule from `## Outputs`: when the profile's output language is bilingual, or the resolution will be filed or shown to a counterparty in a jurisdiction whose authoritative language is not English, the resolution text itself (counterparty-facing) and the bottom line of the drafting notes are rendered in the authoritative language beside the English, using the manifest's spellings. Amounts are in the profile currency; dates follow the manifest's calendar.
+1. **The consent draft** — complete, ready to review and circulate. The executed written consent itself is a corporate record, not privileged; do not apply the work-product header to the consent as circulated. The drafting notes, signatory tracker, and analysis below are work product — prepend the work-product header from `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/corporate-legal/CLAUDE.md` `## Outputs` (it differs by user role — see `## Who's using this`), then, for a non-`usa` code, the jurisdiction disclaimer line from the profile `## Jurisdiction` / the manifest, and apply the bilingual house-style rule from `## Outputs`: when the profile's output language is bilingual, or the resolution will be filed or shown to a counterparty in a jurisdiction whose authoritative language is not English, the resolution text itself (counterparty-facing) and the bottom line of the drafting notes are rendered in the authoritative language beside the English, using the manifest's spellings. Amounts are in the profile currency; dates follow the manifest's calendar.
 
    ```
    [WORK-PRODUCT HEADER — per plugin config ## Outputs — differs by role; see `## Who's using this`]
@@ -402,7 +402,7 @@ Required signatories (signature threshold: [resolved in Step 4 — e.g. unanimou
 □ [Director / partner Name 1]
 □ [Director / partner Name 2]
 □ [Director / partner Name 3]
-[etc. — pulled from board composition in `~/.claude/plugins/config/claude-for-legal/corporate-legal/CLAUDE.md`]
+[etc. — pulled from board composition in `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/corporate-legal/CLAUDE.md`]
 
 Conflict disclosures:
 [None / [Director Name] has a disclosed interest — confirm whether recusal or disclosure is appropriate; counted / excluded from the majority per [file Art. N]]

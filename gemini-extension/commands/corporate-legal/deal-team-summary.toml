@@ -1,0 +1,4 @@
+description = "Aggregate diligence findings into a deal team briefing at the right altitude for the audience — exec summary for leadership, working summary for the team. Use when user says 'brief the deal team', 'wh"
+prompt = """
+Activate the `corporate-legal-deal-team-summary` skill bundled in this extension and run it as written, using the practice profile at ${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/corporate-legal/CLAUDE.md. User input: {{args}}
+"""

@@ -36,7 +36,7 @@ to do and why.
 
 1. Load the `leave-tracker` agent and run the full workflow (it carries the same Step 0 and the per-code regime lists; an unpopulated code stops there).
 
-2. If no HRIS is connected and no `~/.claude/plugins/config/claude-for-legal/employment-legal/leave-register.yaml` exists, prompt
+2. If no HRIS is connected and no `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/employment-legal/leave-register.yaml` exists, prompt
    the attorney to upload a leave spreadsheet or use
    `/employment-legal:log-leave` to add entries.
 

@@ -1,0 +1,4 @@
+description = "Termination review — high-risk flag detection, end-of-service award and compensation computation, notice, final settlement, and release, for the jurisdiction resolved from the practice profile. Rules "
+prompt = """
+Activate the `employment-legal-termination-review` skill bundled in this extension and run it as written, using the practice profile at ${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/employment-legal/CLAUDE.md. User input: {{args}}
+"""

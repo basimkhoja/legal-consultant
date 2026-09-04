@@ -11,7 +11,7 @@ argument-hint: "[policy topic — e.g., 'remote work', 'parental leave', 'PTO']"
 
 # /policy-drafting
 
-1. Load `~/.claude/plugins/config/claude-for-legal/employment-legal/CLAUDE.md` → jurisdictional footprint, handbook location.
+1. Load `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/employment-legal/CLAUDE.md` → jurisdictional footprint, handbook location.
 2. Use the workflow below.
 3. Draft core policy. Check each jurisdiction in footprint for required variants.
 4. Output: core policy + jurisdiction supplements (axis per the applicable code). Flag where law is currently shifting.
@@ -20,7 +20,7 @@ argument-hint: "[policy topic — e.g., 'remote work', 'parental leave', 'PTO']"
 
 ## Matter context
 
-**Matter context.** Check `## Matter workspaces` in the practice-level CLAUDE.md. If `Enabled` is `✗` (the default for in-house users), skip the rest of this paragraph — skills use practice-level context and the matter machinery is invisible. If enabled and there is no active matter, ask: "Which matter is this for? Run `/employment-legal:matter-workspace switch <slug>` or say `practice-level`." Load the active matter's `matter.md` for matter-specific context and overrides. Write outputs to the matter folder at `~/.claude/plugins/config/claude-for-legal/employment-legal/matters/<matter-slug>/`. Never read another matter's files unless `Cross-matter context` is `on`.
+**Matter context.** Check `## Matter workspaces` in the practice-level CLAUDE.md. If `Enabled` is `✗` (the default for in-house users), skip the rest of this paragraph — skills use practice-level context and the matter machinery is invisible. If enabled and there is no active matter, ask: "Which matter is this for? Run `/employment-legal:matter-workspace switch <slug>` or say `practice-level`." Load the active matter's `matter.md` for matter-specific context and overrides. Write outputs to the matter folder at `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/employment-legal/matters/<matter-slug>/`. Never read another matter's files unless `Cross-matter context` is `on`.
 
 ---
 
@@ -30,7 +30,7 @@ A policy that's right for one jurisdiction may be wrong (or unnecessary) in the 
 
 ## Load context
 
-`~/.claude/plugins/config/claude-for-legal/employment-legal/CLAUDE.md` → jurisdictional footprint, handbook location and format, `## Handbook` (jurisdiction supplements, regulatory approval status, language versions).
+`${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/employment-legal/CLAUDE.md` → jurisdictional footprint, handbook location and format, `## Handbook` (jurisdiction supplements, regulatory approval status, language versions).
 
 ## Workflow
 

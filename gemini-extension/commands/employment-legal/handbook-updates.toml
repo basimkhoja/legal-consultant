@@ -1,0 +1,4 @@
+description = "Diff a proposed handbook or work-regulations change against the current version, flag ripple effects, jurisdiction-supplement impacts and any regulatory re-approval step. Use when user says 'update th"
+prompt = """
+Activate the `employment-legal-handbook-updates` skill bundled in this extension and run it as written, using the practice profile at ${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/employment-legal/CLAUDE.md. User input: {{args}}
+"""

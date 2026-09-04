@@ -1,0 +1,4 @@
+description = "Guided customization of your corporate practice profile — change one thing without re-running the whole cold-start interview. Adjust risk posture, escalation contacts, jurisdiction and output language"
+prompt = """
+Activate the `corporate-legal-customize` skill bundled in this extension and run it as written, using the practice profile at ${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/corporate-legal/CLAUDE.md. User input: {{args}}
+"""

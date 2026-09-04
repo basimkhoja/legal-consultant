@@ -35,13 +35,13 @@ For this skill the "matter" in item 2 is the expansion: the target country given
 
 **Jurisdiction files this skill loads:** the list under "Jurisdiction files this skill loads" in the `international-expansion` reference skill (`MANIFEST.md`, `INDEX.md`, `playbook-defaults.md` Labor table, `labor-law.md` Arts. 32-40, 51-53, 74-77, 84-88, 98-117, `saudization-nitaqat.md`, `platform-obligations.md`, `social-insurance-law.md`, `personal-data-protection-law.md`, `investment-law.md`, `companies-law.md`, `labor-dispute-route.md`), read through that skill's Steps 2 and 4.
 
-1. Load `~/.claude/plugins/config/claude-for-legal/employment-legal/CLAUDE.md` → jurisdictional footprint, escalation table.
+1. Load `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/employment-legal/CLAUDE.md` → jurisdictional footprint, escalation table.
 2. Load the `international-expansion` reference skill and run the full workflow. When the target folder is populated, run its populated-folder branch (pre-filled briefing, jurisdiction rows in the EOR-vs-entity table, each item with the file's tag and a "currency check" label); otherwise run the upstream outside-counsel path.
-3. If a tracker file already exists for this country (`~/.claude/plugins/config/claude-for-legal/employment-legal/expansion-[slug].yaml`),
+3. If a tracker file already exists for this country (`${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/employment-legal/expansion-[slug].yaml`),
    flag it: "An expansion tracker for [country] already exists. Use
    `/employment-legal:expansion-update [country]` to update it, or confirm
    you want to start over."
-4. Create `~/.claude/plugins/config/claude-for-legal/employment-legal/expansion-[slug].yaml` on completion.
+4. Create `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/employment-legal/expansion-[slug].yaml` on completion.
 5. Output: prepend the work-product header, then, for a target that is not `usa`, the jurisdiction disclaimer line from the practice profile `## Outputs`; apply the bilingual house-style rule from the plugin CLAUDE.md `## Outputs` where the profile asks for it; amounts in `[currency]`, dates against the calendar in the manifest; record `Jurisdiction: <codes>; files: <list>; portal fetched: yes/no; unpopulated codes: <list or none>` in the reviewer note.
 
 ## Examples

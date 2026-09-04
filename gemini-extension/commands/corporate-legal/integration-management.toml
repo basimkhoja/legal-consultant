@@ -1,0 +1,4 @@
+description = "Post-closing M&A integration tracker — phased workplan, consent tracking, contract assignment at scale, weekly status reports. Initializes from whatever deal artifacts are available (purchase agreemen"
+prompt = """
+Activate the `corporate-legal-integration-management` skill bundled in this extension and run it as written, using the practice profile at ${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/corporate-legal/CLAUDE.md. User input: {{args}}
+"""

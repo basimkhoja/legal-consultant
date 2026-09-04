@@ -1,0 +1,4 @@
+description = "Trace how a contract has changed across its base agreement and all amendments — either a summary of all changes over time, or a provision trace for a specific clause. Use when the user says 'what chan"
+prompt = """
+Activate the `commercial-legal-amendment-history` skill bundled in this extension and run it as written, using the practice profile at ${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/commercial-legal/CLAUDE.md. User input: {{args}}
+"""

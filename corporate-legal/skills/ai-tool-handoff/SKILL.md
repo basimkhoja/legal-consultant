@@ -3,7 +3,7 @@ name: ai-tool-handoff
 description: >
   Detects when Luminance, Kira, or a similar bulk-review tool is in use,
   hands off the high-volume clause extraction to it, and QAs its output
-  per the trust level in `~/.claude/plugins/config/claude-for-legal/corporate-legal/CLAUDE.md`. Use when user says "send to Luminance",
+  per the trust level in `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/corporate-legal/CLAUDE.md`. Use when user says "send to Luminance",
   "bulk review", "AI extraction", or when diligence-issue-extraction hits
   a high-volume category.
 ---
@@ -12,7 +12,7 @@ description: >
 
 ## Matter context
 
-**Matter context.** Check `## Matter workspaces` in the practice-level CLAUDE.md. If `Enabled` is `✗` (the default for in-house users), skip the rest of this paragraph — skills use practice-level context and the matter machinery is invisible. If enabled and there is no active matter, ask: "Which matter is this for? Run `/corporate-legal:matter-workspace switch <slug>` or say `practice-level`." Load the active matter's `matter.md` for matter-specific context and overrides. Write outputs to the matter folder at `~/.claude/plugins/config/claude-for-legal/corporate-legal/matters/<matter-slug>/`. Never read another matter's files unless `Cross-matter context` is `on`.
+**Matter context.** Check `## Matter workspaces` in the practice-level CLAUDE.md. If `Enabled` is `✗` (the default for in-house users), skip the rest of this paragraph — skills use practice-level context and the matter machinery is invisible. If enabled and there is no active matter, ask: "Which matter is this for? Run `/corporate-legal:matter-workspace switch <slug>` or say `practice-level`." Load the active matter's `matter.md` for matter-specific context and overrides. Write outputs to the matter folder at `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/corporate-legal/matters/<matter-slug>/`. Never read another matter's files unless `Cross-matter context` is `on`.
 
 ---
 
@@ -26,13 +26,13 @@ This skill hands off the bulk extraction to the right tool, then runs the QA lay
 
 ## Load context
 
-`~/.claude/plugins/config/claude-for-legal/corporate-legal/CLAUDE.md` → AI-assisted review:
+`${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/corporate-legal/CLAUDE.md` → AI-assisted review:
 - Tool in use (Luminance / Kira / none)
 - What it's used for (which clause types)
 - Trust level (use as-is / spot-check / full re-review)
 - Handoff process (who loads, who QAs)
 
-If `~/.claude/plugins/config/claude-for-legal/corporate-legal/CLAUDE.md` says no AI tool → this skill is a no-op. Everything goes through diligence-issue-extraction directly.
+If `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/corporate-legal/CLAUDE.md` says no AI tool → this skill is a no-op. Everything goes through diligence-issue-extraction directly.
 
 ## When to hand off
 
@@ -72,12 +72,12 @@ Don't hand off:
 ### Step 1: Prepare the batch
 
 - Identify documents for the batch (from VDR inventory)
-- Specify extraction targets per `~/.claude/plugins/config/claude-for-legal/corporate-legal/CLAUDE.md` (which clause types); for a populated non-`usa` code, add the overlay clause types `diligence-issue-extraction` Step 2.5 needs from the batch (for `ksa`: assignment and change-of-control wording against `civil-transactions-law.md` Arts. 98, 255; insolvency-termination clauses against `bankruptcy-law.md` Art. 23; government-entity counterparties for `government-tenders-procurement-law.md`), and name the targets in the documents' language
+- Specify extraction targets per `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/corporate-legal/CLAUDE.md` (which clause types); for a populated non-`usa` code, add the overlay clause types `diligence-issue-extraction` Step 2.5 needs from the batch (for `ksa`: assignment and change-of-control wording against `civil-transactions-law.md` Arts. 98, 255; insolvency-termination clauses against `bankruptcy-law.md` Art. 23; government-entity counterparties for `government-tenders-procurement-law.md`), and name the targets in the documents' language
 - Note the materiality threshold, in the profile currency from `## Jurisdiction` (`[currency] X`), so tool output can be filtered; a document in another currency is converted only at a rate the deal team supplies
 
 ### Step 2: Load (or instruct the loader)
 
-Per `~/.claude/plugins/config/claude-for-legal/corporate-legal/CLAUDE.md` — who loads. If it's you, generate the load instructions. If it's someone else, generate the request:
+Per `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/corporate-legal/CLAUDE.md` — who loads. If it's you, generate the load instructions. If it's someone else, generate the request:
 
 ```markdown
 ## [Tool] Load Request — [Deal code] — [Category]
@@ -87,7 +87,7 @@ Per `~/.claude/plugins/config/claude-for-legal/corporate-legal/CLAUDE.md` — wh
 **Extraction targets:**
 - Change of control / assignment
 - Exclusivity
-- [etc. per `~/.claude/plugins/config/claude-for-legal/corporate-legal/CLAUDE.md`]
+- [etc. per `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/corporate-legal/CLAUDE.md`]
 
 **Filter output:** Flag only where extraction target is present — no need for "no CoC clause found" for every doc.
 
@@ -98,7 +98,7 @@ Per `~/.claude/plugins/config/claude-for-legal/corporate-legal/CLAUDE.md` — wh
 
 When the tool returns results, apply the trust level:
 
-**"Use as-is":** Ingest directly into diligence findings. (Only if `~/.claude/plugins/config/claude-for-legal/corporate-legal/CLAUDE.md` says this — it's rare.)
+**"Use as-is":** Ingest directly into diligence findings. (Only if `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/corporate-legal/CLAUDE.md` says this — it's rare.)
 
 **"Spot-check X%":** Randomly sample X% of flagged documents. For each, read the actual clause and compare to the tool's extraction. If error rate is low, accept the batch. If errors found, widen the sample.
 
@@ -135,7 +135,7 @@ Prepend the work-product header from the plugin config `## Outputs`, then, for a
 
 ### QA
 
-**Trust level:** [per `~/.claude/plugins/config/claude-for-legal/corporate-legal/CLAUDE.md`]
+**Trust level:** [per `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/corporate-legal/CLAUDE.md`]
 **Sample size:** [N] docs spot-checked
 **Error rate:** [X]% — [Accepted / Widened sample / Full re-review triggered]
 
@@ -157,5 +157,5 @@ End with the next-steps decision tree per CLAUDE.md `## Outputs`. Customize the 
 ## What this skill does not do
 
 - It doesn't run Luminance or Kira — it manages the handoff and QA. A human (or the tool's own interface) runs the extraction.
-- It doesn't replace the tool's output with its own judgment entirely — if `~/.claude/plugins/config/claude-for-legal/corporate-legal/CLAUDE.md` says spot-check 10%, check 10%, not 100%.
-- It doesn't decide the trust level — that's in `~/.claude/plugins/config/claude-for-legal/corporate-legal/CLAUDE.md`, set at cold-start based on the team's experience with the tool.
+- It doesn't replace the tool's output with its own judgment entirely — if `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/corporate-legal/CLAUDE.md` says spot-check 10%, check 10%, not 100%.
+- It doesn't decide the trust level — that's in `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/corporate-legal/CLAUDE.md`, set at cold-start based on the team's experience with the tool.

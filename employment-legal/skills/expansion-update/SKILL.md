@@ -34,9 +34,9 @@ For this skill the "matter" in item 2 is the tracker's country (`country` and `c
 
 **Jurisdiction files this skill loads:** `references/jurisdictions/<code>/MANIFEST.md` (populated flag, calendar for due dates and overdue checks, currency); for a populated code, the same instrument files as the `international-expansion` reference skill lists (`labor-law.md`, `saudization-nitaqat.md`, `platform-obligations.md`, `social-insurance-law.md`, `personal-data-protection-law.md`, `investment-law.md`, `companies-law.md`, `labor-dispute-route.md`, `playbook-defaults.md` Labor table), read only for the open items being pre-filled.
 
-1. Load `~/.claude/plugins/config/claude-for-legal/employment-legal/CLAUDE.md`.
+1. Load `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/employment-legal/CLAUDE.md`.
 
-2. Identify the tracker file: `~/.claude/plugins/config/claude-for-legal/employment-legal/expansion-[slug].yaml`. If it doesn't
+2. Identify the tracker file: `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/employment-legal/expansion-[slug].yaml`. If it doesn't
    exist, respond: "No expansion tracker found for [country]. Run
    `/employment-legal:expansion-kickoff [country]` to start one."
 

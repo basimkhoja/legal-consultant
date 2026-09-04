@@ -63,7 +63,7 @@ every regime with a clock in the file; leave types with no row are logged
 `[no rule in <code> files — verify]` and not given a computed deadline.
 
 > **Research the applicable regimes before relying on the tracker.** For each
-> jurisdiction in `~/.claude/plugins/config/claude-for-legal/employment-legal/CLAUDE.md`: for `usa`, identify the currently operative leave statutes,
+> jurisdiction in `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/employment-legal/CLAUDE.md`: for `usa`, identify the currently operative leave statutes,
 > employer coverage thresholds, employee eligibility requirements, and any
 > amendments or new paid-leave programs. Cite the controlling statute and
 > implementing regulations with pinpoint cites. Verify currency — state paid
@@ -116,7 +116,7 @@ calendar reminder) outside the plugin.
 
 ### Step 1 — Read the practice profile
 
-Read `~/.claude/plugins/config/claude-for-legal/employment-legal/CLAUDE.md`. Extract:
+Read `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/employment-legal/CLAUDE.md`. Extract:
 - `## Jurisdiction` (primary code, footprint, calendar, output language) and
   jurisdictional footprint, and any jurisdiction-specific leave rules the team
   has already researched and recorded
@@ -140,7 +140,7 @@ is a work injury (Art. 137) and whether the fund is paying (`social-insurance-la
 Art. 33).
 
 **If manual:**
-Read `~/.claude/plugins/config/claude-for-legal/employment-legal/leave-register.yaml`. If the file doesn't exist, prompt:
+Read `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/employment-legal/leave-register.yaml`. If the file doesn't exist, prompt:
 > "I don't see a leave register. Either connect your HRIS or drop your current
 > leave spreadsheet here and I'll load it. You can also use
 > `/employment-legal:log-leave` to add leaves one at a time."
@@ -239,7 +239,7 @@ Surface only entries requiring a decision or action. Do not surface clean
 leaves with no upcoming deadlines.
 
 Alert tiers (thresholds are agent-level defaults — adjust to the team's
-preference in `~/.claude/plugins/config/claude-for-legal/employment-legal/CLAUDE.md`; "working days" are counted on the calendar in the
+preference in `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/employment-legal/CLAUDE.md`; "working days" are counted on the calendar in the
 manifest, never on a Saturday/Sunday weekend or US federal holidays):
 - IMMEDIATE ACTION: decision or deadline within 3 working days
 - ACTION NEEDED THIS WEEK: within 7 days
@@ -301,7 +301,7 @@ This is the highest-risk leave scenario in the register.
 Required before any separation decision:
 (1) Documented interactive process (written outreach at minimum).
 (2) Written undue-hardship analysis if additional leave was denied.
-(3) Escalation per `~/.claude/plugins/config/claude-for-legal/employment-legal/CLAUDE.md` before proceeding.
+(3) Escalation per `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/employment-legal/CLAUDE.md` before proceeding.
 Escalate to: [name from escalation table]
 ```
 
@@ -432,13 +432,13 @@ If the register has more than ~10 open leaves, or any time the user asks: offer 
 
 ### Step 6 — Update the register
 
-After running, update `~/.claude/plugins/config/claude-for-legal/employment-legal/leave-register.yaml` with recalculated fields
+After running, update `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/employment-legal/leave-register.yaml` with recalculated fields
 (time used if pulled from HRIS, last_checked timestamp, status changes).
 Do not overwrite any `notes` fields the attorney has added manually.
 
 ## Leave register format
 
-`~/.claude/plugins/config/claude-for-legal/employment-legal/leave-register.yaml`:
+`${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/employment-legal/leave-register.yaml`:
 
 ```yaml
 - employee_id: [name, role, or anonymized ID]

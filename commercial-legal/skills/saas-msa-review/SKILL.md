@@ -12,7 +12,7 @@ user-invocable: false
 
 ## Matter context
 
-**Matter context.** Check `## Matter workspaces` in the practice-level CLAUDE.md. If `Enabled` is `✗` (the default for in-house users), skip the rest of this paragraph — skills use practice-level context and the matter machinery is invisible. If enabled and there is no active matter, ask: "Which matter is this for? Run `/commercial-legal:matter-workspace switch <slug>` or say `practice-level`." Load the active matter's `matter.md` for matter-specific context and overrides. Write outputs to the matter folder at `~/.claude/plugins/config/claude-for-legal/commercial-legal/matters/<matter-slug>/`. Never read another matter's files unless `Cross-matter context` is `on`.
+**Matter context.** Check `## Matter workspaces` in the practice-level CLAUDE.md. If `Enabled` is `✗` (the default for in-house users), skip the rest of this paragraph — skills use practice-level context and the matter machinery is invisible. If enabled and there is no active matter, ask: "Which matter is this for? Run `/commercial-legal:matter-workspace switch <slug>` or say `practice-level`." Load the active matter's `matter.md` for matter-specific context and overrides. Write outputs to the matter folder at `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/commercial-legal/matters/<matter-slug>/`. Never read another matter's files unless `Cross-matter context` is `on`.
 
 ---
 
@@ -20,7 +20,7 @@ user-invocable: false
 
 SaaS agreements have a distinct risk profile from one-time vendor contracts. The fees compound over renewals, the data accumulates, and the switching cost grows every month. This skill reviews with that in mind.
 
-It runs the standard playbook check from `~/.claude/plugins/config/claude-for-legal/commercial-legal/CLAUDE.md` and adds a SaaS-specific overlay on the terms that bite hardest in subscription deals.
+It runs the standard playbook check from `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/commercial-legal/CLAUDE.md` and adds a SaaS-specific overlay on the terms that bite hardest in subscription deals.
 
 ### Step 0: Resolve the applicable jurisdiction
 
@@ -57,25 +57,25 @@ SaaS terms (auto-renewal notice requirements, price-escalation caps, data-portab
 
 **Which side?** Before applying the playbook, determine which side the company is on for this SaaS agreement. Usually obvious: if the counterparty is a SaaS vendor selling you their platform, you're purchasing-side. If you are the SaaS vendor and the counterparty is your customer, you're sales-side. If it's not obvious (a reseller arrangement, a white-label deal), ask: "Which side is [company] on for this agreement — vendor or customer?" Read the matching playbook section (`### Sales-side playbook` or `### Purchasing-side playbook`) from the config. Note which side in the output so the reviewer knows which playbook was applied. If the matching side is `[Not configured]`, stop and tell the user to run `/commercial-legal:cold-start-interview --side <side>` before this review can proceed.
 
-Read `~/.claude/plugins/config/claude-for-legal/commercial-legal/CLAUDE.md` first. The general playbook for the matching side (liability, indemnity, termination, governing law) applies fully — run all the standard checks from the vendor-agreement-review skill.
+Read `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/commercial-legal/CLAUDE.md` first. The general playbook for the matching side (liability, indemnity, termination, governing law) applies fully — run all the standard checks from the vendor-agreement-review skill.
 
 Then look for a `## Playbook` → matching side → `SaaS positions` section. That's where the team records its positions on auto-renewal notice windows, acceptable price escalators, data export rights, SLA thresholds, subprocessor approval rights, and deprecation notice. This skill does not ship with defaults for these — the right numbers vary by deal size, vendor leverage, and the team's risk tolerance.
 
-If `~/.claude/plugins/config/claude-for-legal/commercial-legal/CLAUDE.md` doesn't address a SaaS-specific term that comes up in this review, ask:
+If `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/commercial-legal/CLAUDE.md` doesn't address a SaaS-specific term that comes up in this review, ask:
 
-> Your playbook doesn't cover [term — e.g., "maximum acceptable auto-renewal notice window" or "whether vendor retention of anonymized derivatives is acceptable"]. What's your team's position? I'll add it to `~/.claude/plugins/config/claude-for-legal/commercial-legal/CLAUDE.md`.
+> Your playbook doesn't cover [term — e.g., "maximum acceptable auto-renewal notice window" or "whether vendor retention of anonymized derivatives is acceptable"]. What's your team's position? I'll add it to `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/commercial-legal/CLAUDE.md`.
 
 Record the answer and proceed.
 
 ## SaaS-specific overlay
 
-For each category below, list what you found in the contract and compare to the team's position in `~/.claude/plugins/config/claude-for-legal/commercial-legal/CLAUDE.md`. Do not apply hardcoded thresholds from this skill.
+For each category below, list what you found in the contract and compare to the team's position in `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/commercial-legal/CLAUDE.md`. Do not apply hardcoded thresholds from this skill.
 
 ### 1. Auto-renewal mechanics
 
 The single most common way a SaaS deal goes wrong: nobody notices the renewal notice window and we're locked in for another year at a higher price.
 
-Check each element and compare against the team's `SaaS positions` in `~/.claude/plugins/config/claude-for-legal/commercial-legal/CLAUDE.md`:
+Check each element and compare against the team's `SaaS positions` in `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/commercial-legal/CLAUDE.md`:
 
 - **Renewal term length** (e.g., same as initial, longer, multi-year auto-convert)
 - **Notice-to-cancel window** (number of days before renewal)
@@ -91,7 +91,7 @@ Check each element and compare against the team's `SaaS positions` in `~/.claude
 
 ### 2. Price escalation
 
-Check each element against `~/.claude/plugins/config/claude-for-legal/commercial-legal/CLAUDE.md`:
+Check each element against `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/commercial-legal/CLAUDE.md`:
 
 - **Annual escalator** (fixed %, CPI, uncapped, etc.)
 - **Usage overage pricing** (published rate card, premium rate, unspecified)
@@ -99,7 +99,7 @@ Check each element against `~/.claude/plugins/config/claude-for-legal/commercial
 
 ### 3. Data portability and exit
 
-When (not if) we leave this vendor, can we get our data out? Check each element against `~/.claude/plugins/config/claude-for-legal/commercial-legal/CLAUDE.md`:
+When (not if) we leave this vendor, can we get our data out? Check each element against `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/commercial-legal/CLAUDE.md`:
 
 - **Export format** (open/standard, proprietary-but-documented, "commercially reasonable")
 - **Export availability** (self-serve anytime, on request during term, only at termination)
@@ -107,7 +107,7 @@ When (not if) we leave this vendor, can we get our data out? Check each element 
 - **Export cost** (free, T&M, per-GB or per-record)
 - **Deletion certification** (certified on request, none, vendor retains derivatives)
 
-Vendor retention of "anonymized" or "aggregated" derivatives is a material position — confirm the team's stance in `~/.claude/plugins/config/claude-for-legal/commercial-legal/CLAUDE.md` and flag either way.
+Vendor retention of "anonymized" or "aggregated" derivatives is a material position — confirm the team's stance in `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/commercial-legal/CLAUDE.md` and flag either way.
 
 For a populated non-`usa` code, the deletion and retention items are measured against `personal-data-protection-law.md` (for `ksa`: Art. 18 — destroy without delay once the purpose ends, retention only for a legal-retention period or a pending case, so open-ended "backup" retention is inconsistent with the row; Art. 1 — data stay "personal data" until no longer identifiable, so an undefined "anonymised derivatives" right is a finding; Art. 31 / Regulation Art. 33 — the vendor must supply what the controller needs for its records). Cite the row on each finding.
 
@@ -115,7 +115,7 @@ For a populated non-`usa` code, the deletion and retention items are measured ag
 
 Only matters if the business actually depends on this service being up. If it's a nice-to-have tool, skip this section — don't spend negotiating capital on SLAs for a survey tool.
 
-Check each element against `~/.claude/plugins/config/claude-for-legal/commercial-legal/CLAUDE.md`:
+Check each element against `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/commercial-legal/CLAUDE.md`:
 
 - **Uptime commitment** (percentage, or "commercially reasonable efforts")
 - **Measurement period** (monthly, quarterly, annual)
@@ -127,7 +127,7 @@ Check each element against `~/.claude/plugins/config/claude-for-legal/commercial
 
 This is a data protection issue but it's SaaS-specific because the subprocessor list *changes* over the life of the subscription.
 
-Check each element against `~/.claude/plugins/config/claude-for-legal/commercial-legal/CLAUDE.md`:
+Check each element against `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/commercial-legal/CLAUDE.md`:
 
 - **Current list** (published, on request, unavailable)
 - **Change notification** (advance notice period, or none)
@@ -139,7 +139,7 @@ For a populated non-`usa` code, apply `personal-data-protection-law.md` before t
 
 SaaS vendors change their product. Usually fine. Sometimes they deprecate the thing you bought.
 
-Check each element against `~/.claude/plugins/config/claude-for-legal/commercial-legal/CLAUDE.md`:
+Check each element against `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/commercial-legal/CLAUDE.md`:
 
 - **Material adverse changes** (right to terminate on material degradation, notice-only, unrestricted)
 - **Deprecation notice period** for features the team relies on
@@ -227,7 +227,7 @@ Data-exit, auto-renewal, and price-escalation findings are the ones most likely 
 **Flag for renewal-tracker:** [yes — and the record the tracker needs]
 
 ### Price escalation
-[findings against `~/.claude/plugins/config/claude-for-legal/commercial-legal/CLAUDE.md` positions]
+[findings against `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/commercial-legal/CLAUDE.md` positions]
 
 ### Data exit
 [findings — this is the one the business owner should read]
@@ -236,10 +236,10 @@ Data-exit, auto-renewal, and price-escalation findings are the ones most likely 
 [findings, or "Skipped — service is not business-critical per [stakeholder]"]
 
 ### Subprocessors
-[findings against `~/.claude/plugins/config/claude-for-legal/commercial-legal/CLAUDE.md` positions]
+[findings against `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/commercial-legal/CLAUDE.md` positions]
 
 ### Service changes
-[findings against `~/.claude/plugins/config/claude-for-legal/commercial-legal/CLAUDE.md` positions]
+[findings against `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/commercial-legal/CLAUDE.md` positions]
 ```
 
 ## Handoffs
@@ -263,11 +263,11 @@ status:               active
 
 If any field is not determinable from the contract or context, leave it out and note which fields were missing so the human can fill them in. `clm_id`, `annual_value`, and `business_owner` are especially likely to need human input.
 
-**To escalation-flagger:** If any of the SaaS-specific checks hits the team's "never accept" or escalation-trigger list in `~/.claude/plugins/config/claude-for-legal/commercial-legal/CLAUDE.md`, the escalation-flagger skill routes it.
+**To escalation-flagger:** If any of the SaaS-specific checks hits the team's "never accept" or escalation-trigger list in `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/commercial-legal/CLAUDE.md`, the escalation-flagger skill routes it.
 
 ## A note on what to fight over
 
-SaaS vendors, especially large ones, negotiate their paper about as willingly as airlines negotiate ticket terms. Pick battles *per the team's playbook* — the `SaaS positions` section in `~/.claude/plugins/config/claude-for-legal/commercial-legal/CLAUDE.md` should distinguish between terms the team will always push on, terms it fights over only for material deals, and terms it lets slide. If the playbook doesn't draw those lines, ask.
+SaaS vendors, especially large ones, negotiate their paper about as willingly as airlines negotiate ticket terms. Pick battles *per the team's playbook* — the `SaaS positions` section in `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/commercial-legal/CLAUDE.md` should distinguish between terms the team will always push on, terms it fights over only for material deals, and terms it lets slide. If the playbook doesn't draw those lines, ask.
 
 Calibrate based on contract value and switching cost. A [currency] 5K/year tool with easy alternatives gets a lighter touch than a [currency] 500K/year platform we'll build on top of.
 

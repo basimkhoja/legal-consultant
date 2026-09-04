@@ -13,7 +13,7 @@ argument-hint: "[--init | --report [--days N] | --update [--from-report] | --swe
 # /entity-compliance
 
 0. Run Step 0 (resolve the applicable jurisdiction) below before any mode; every entity carries its own `jurisdiction_code`, so a tracker can span several codes.
-1. Load `~/.claude/plugins/config/claude-for-legal/corporate-legal/CLAUDE.md` → `## Jurisdiction` and `## Entity Management` (entity table with local type, jurisdiction code and registry number; filing agent).
+1. Load `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/corporate-legal/CLAUDE.md` → `## Jurisdiction` and `## Entity Management` (entity table with local type, jurisdiction code and registry number; filing agent).
 2. Route to the correct mode below based on flag:
    - No flag or `--init`: Mode 1 — initialize tracker from entity table
    - `--report`: Mode 2 — surface upcoming deadlines and overdue items
@@ -21,7 +21,7 @@ argument-hint: "[--init | --report [--days N] | --update [--from-report] | --swe
    - `--sweep`: Mode 3c — walk through unknown/overdue items one by one
    - `--audit`: Mode 4 — full health audit
    - `--export`: Mode 5 — produce CSV or table export
-3. Read/write `~/.claude/plugins/config/claude-for-legal/corporate-legal/entities/compliance-tracker.yaml`.
+3. Read/write `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/corporate-legal/entities/compliance-tracker.yaml`.
 4. After any update: show summary of changes and next action.
 
 ---
@@ -61,7 +61,7 @@ to share it.
 
 ## Jurisdiction assumption
 
-> This tracker computes deadlines against the `jurisdiction_code` of formation / registration recorded per entity (Step 0 resolves the profile's codes; each entity may carry a different one). Filing rules, due-date mechanics, and fee structures vary materially by jurisdiction. For a populated non-`usa` code the rules come only from `references/jurisdictions/<code>/`; for `usa` they come from the upstream path below; an unpopulated code is a hard stop for that entity (Step 0, item 3). If an entity's actual footprint differs from what's in `~/.claude/plugins/config/claude-for-legal/corporate-legal/CLAUDE.md` (undisclosed registration in another jurisdiction, dissolved entities, re-domestication, filings managed by a local agent), the output may not apply as written — confirm with the filing agent or local counsel for that jurisdiction.
+> This tracker computes deadlines against the `jurisdiction_code` of formation / registration recorded per entity (Step 0 resolves the profile's codes; each entity may carry a different one). Filing rules, due-date mechanics, and fee structures vary materially by jurisdiction. For a populated non-`usa` code the rules come only from `references/jurisdictions/<code>/`; for `usa` they come from the upstream path below; an unpopulated code is a hard stop for that entity (Step 0, item 3). If an entity's actual footprint differs from what's in `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/corporate-legal/CLAUDE.md` (undisclosed registration in another jurisdiction, dissolved entities, re-domestication, filings managed by a local agent), the output may not apply as written — confirm with the filing agent or local counsel for that jurisdiction.
 
 ## Entity-type disambiguation
 
@@ -85,7 +85,7 @@ to share it.
 
 ## Tracker file
 
-Lives at `~/.claude/plugins/config/claude-for-legal/corporate-legal/entities/compliance-tracker.yaml`. Structure:
+Lives at `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/corporate-legal/entities/compliance-tracker.yaml`. Structure:
 
 ```yaml
 # Entity Compliance Tracker
@@ -180,7 +180,7 @@ Run when no tracker exists, or with `--rebuild` to regenerate from scratch.
 
 ### Step 1: Load entity table
 
-Read `~/.claude/plugins/config/claude-for-legal/corporate-legal/CLAUDE.md` → `## Entity Management` → Entity table. If the entity table
+Read `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/corporate-legal/CLAUDE.md` → `## Entity Management` → Entity table. If the entity table
 is populated (from org chart upload at cold-start), use it directly. If not,
 ask the user to either run the cold-start module or provide the entity list.
 
@@ -298,7 +298,7 @@ report and are tagged `[user provided]`.
 
 ### Step 3: Write the tracker
 
-Generate `~/.claude/plugins/config/claude-for-legal/corporate-legal/entities/compliance-tracker.yaml` with all entities and their
+Generate `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/corporate-legal/entities/compliance-tracker.yaml` with all entities and their
 calculated filing requirements. Set initial status:
 - `current` if last_filed is within the current filing period
 - `due_soon` if due within 90 days and no last_filed for current period
@@ -329,7 +329,7 @@ Run /corporate-legal:entity-compliance --report to see what's due.
 
 ## Output rules (every mode)
 
-Every report, audit and export this skill produces: prepend the work-product header from `~/.claude/plugins/config/claude-for-legal/corporate-legal/CLAUDE.md` `## Outputs` (it differs by role — see `## Who's using this`); directly under it, for any entity whose code is not `usa`, add the jurisdiction disclaimer line from the profile `## Jurisdiction` / the manifest; then apply the bilingual house-style rule from `## Outputs` — when the profile's output language is bilingual, render the bottom line (the status summary) and the findings table (the report's entity rows) in the authoritative language as well as English, using the manifest's spellings. Amounts are in the profile currency. Label every entity row with its jurisdiction code, local entity type and the local status name. Close with the reviewer-note line from Step 0 item 8.
+Every report, audit and export this skill produces: prepend the work-product header from `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/corporate-legal/CLAUDE.md` `## Outputs` (it differs by role — see `## Who's using this`); directly under it, for any entity whose code is not `usa`, add the jurisdiction disclaimer line from the profile `## Jurisdiction` / the manifest; then apply the bilingual house-style rule from `## Outputs` — when the profile's output language is bilingual, render the bottom line (the status summary) and the findings table (the report's entity rows) in the authoritative language as well as English, using the manifest's spellings. Amounts are in the profile currency. Label every entity row with its jurisdiction code, local entity type and the local status name. Close with the reviewer-note line from Step 0 item 8.
 
 ---
 
@@ -386,7 +386,7 @@ Updates one or more entities in the tracker. Three sub-modes:
 
 ### Consequential-action gate (file SOI / annual report)
 
-**Before directing or confirming a filing:** Read `## Who's using this` in `~/.claude/plugins/config/claude-for-legal/corporate-legal/CLAUDE.md`. If the Role is **Non-lawyer**:
+**Before directing or confirming a filing:** Read `## Who's using this` in `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/corporate-legal/CLAUDE.md`. If the Role is **Non-lawyer**:
 
 > Filing a [filing type] with [the issuing authority from the jurisdiction file — for `usa`: a Secretary of State; for `ksa`: the Ministry of Commerce, ZATCA, GOSI, Qiwa, MISA] has legal consequences — it's a formal representation from the entity, it carries fees, and missed or incorrect filings carry the consequences the jurisdiction file names (for `usa`: loss of good standing, franchise-tax defaults, dissolution; for `ksa`: suspension of the commercial register per `commercial-register-law.md` Art. 15 and fines up to SAR 500,000 per `companies-law.md` Art. 262, plus the ZATCA, GOSI and Qiwa service blocks in `filing-calendar.md`, which are `[model knowledge — verify]`). Have you reviewed this with an attorney (or a qualified filing agent) before filing? If yes, proceed to record the filing. If no, here's a brief to bring to them:
 >
@@ -490,14 +490,14 @@ Broader review beyond just filing status. Surfaces:
   refreshing, especially if M&A or financing is anticipated.
 
 **Registration gaps per the jurisdiction file:**
-- When the applicable code is `usa`: based on `~/.claude/plugins/config/claude-for-legal/corporate-legal/CLAUDE.md` entity table, are there states in the company's
+- When the applicable code is `usa`: based on `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/corporate-legal/CLAUDE.md` entity table, are there states in the company's
   operational footprint (offices, employees) where entities are not foreign
   qualified? This requires the attorney to confirm operational presence —
   Claude can flag the question but cannot determine presence independently.
 - When the applicable code is a populated non-`usa` code: test each entity against the registrations its jurisdiction files make mandatory, and flag the ones with no evidence on file. For `ksa`: foreign-investment registration validity and activity match (`investment-law.md` Art. 7(2), Reg. Art. 13, Art. 8(3)) for any entity with non-Saudi ownership; CR annual confirmation filed and no suspension (`commercial-register-law.md` Arts. 11, 15); UBO initial disclosure and latest annual confirmation on file (`ultimate-beneficial-ownership-rules.md`); GOSI registration and certificate and Qiwa establishment file, documented contracts and Nitaqat band (`social-insurance-law.md` Arts. 7, 10; `platform-obligations.md` Labor Law Arts. 15-16, 51; `saudization-nitaqat.md` — the band is taken from a dated Qiwa export, never inferred); the entity's own bank accounts in use (`anti-concealment-law.md` Arts. 4(c), 17). A registration the files do not cover (a sector-regulator licence) is listed as `[no rule in ksa files — verify]`.
 
 **Intercompany agreement gaps:**
-- From `~/.claude/plugins/config/claude-for-legal/corporate-legal/CLAUDE.md`: if intercompany agreements are marked as partial or no,
+- From `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/corporate-legal/CLAUDE.md`: if intercompany agreements are marked as partial or no,
   flag which entity relationships likely need agreements (parent-subsidiary
   services, IP licenses, loans).
 
@@ -523,10 +523,10 @@ REGISTRATION STATUS ([local status name per jurisdiction code])
 POTENTIAL GAPS
   Registration gaps per the jurisdiction file:
     [usa — foreign qualification: flag question — confirm operational presence in:]
-    [list of states from `~/.claude/plugins/config/claude-for-legal/corporate-legal/CLAUDE.md` footprint not in tracker as qualified]
+    [list of states from `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/corporate-legal/CLAUDE.md` footprint not in tracker as qualified]
     [non-usa — per entity: registration / file row / evidence on file or missing, e.g. for ksa: MISA registration — investment-law.md Reg. Art. 13 — missing; UBO annual confirmation — ultimate-beneficial-ownership-rules.md — filed 2026-03-01]
   Unconfirmed model-knowledge rows: [N] filings awaiting accountant / filing-agent confirmation
-  Intercompany agreements: [status from `~/.claude/plugins/config/claude-for-legal/corporate-legal/CLAUDE.md`]
+  Intercompany agreements: [status from `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/corporate-legal/CLAUDE.md`]
 
 RECOMMENDED ACTIONS
   1. [Highest priority action]

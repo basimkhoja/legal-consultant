@@ -12,7 +12,7 @@ argument-hint: "[describe the termination, or attach documentation]"
 
 # /termination-review
 
-1. Load `~/.claude/plugins/config/claude-for-legal/employment-legal/CLAUDE.md` → termination review triggers, high-risk flags, severance practice, jurisdiction rules.
+1. Load `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/employment-legal/CLAUDE.md` → termination review triggers, high-risk flags, severance practice, jurisdiction rules.
 2. Use the workflow below.
 3. Walk the checklist. Check every high-risk flag.
 4. Final settlement, notice, end-of-service award and compensation per the applicable jurisdiction file (Steps 2a, 2b, 3). Severance + release if applicable (Step 4).
@@ -22,7 +22,7 @@ argument-hint: "[describe the termination, or attach documentation]"
 
 ## Matter context
 
-**Matter context.** Check `## Matter workspaces` in the practice-level CLAUDE.md. If `Enabled` is `✗` (the default for in-house users), skip the rest of this paragraph — skills use practice-level context and the matter machinery is invisible. If enabled and there is no active matter, ask: "Which matter is this for? Run `/employment-legal:matter-workspace switch <slug>` or say `practice-level`." Load the active matter's `matter.md` for matter-specific context and overrides. Write outputs to the matter folder at `~/.claude/plugins/config/claude-for-legal/employment-legal/matters/<matter-slug>/`. Never read another matter's files unless `Cross-matter context` is `on`.
+**Matter context.** Check `## Matter workspaces` in the practice-level CLAUDE.md. If `Enabled` is `✗` (the default for in-house users), skip the rest of this paragraph — skills use practice-level context and the matter machinery is invisible. If enabled and there is no active matter, ask: "Which matter is this for? Run `/employment-legal:matter-workspace switch <slug>` or say `practice-level`." Load the active matter's `matter.md` for matter-specific context and overrides. Write outputs to the matter folder at `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/employment-legal/matters/<matter-slug>/`. Never read another matter's files unless `Cross-matter context` is `on`.
 
 ---
 
@@ -37,12 +37,12 @@ requirement is researched and cited at the time of review.
 
 ## Load context
 
-`~/.claude/plugins/config/claude-for-legal/employment-legal/CLAUDE.md` → termination review triggers, high-risk flags, standard severance,
+`${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/employment-legal/CLAUDE.md` → termination review triggers, high-risk flags, standard severance,
 jurisdiction table.
 
 ## Output header
 
-Prepend the work-product header from `~/.claude/plugins/config/claude-for-legal/employment-legal/CLAUDE.md` → `## Outputs` (it differs by user role — see `## Who's using this`). Match the memo format from seed term memos referenced in that config where one exists. The work-product header is always first. For every code other than `usa`, the jurisdiction disclaimer line from `## Outputs` follows the header, and the bilingual house-style rule in `## Outputs` applies to the bottom line, the numbers table and any counterparty-facing text.
+Prepend the work-product header from `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/employment-legal/CLAUDE.md` → `## Outputs` (it differs by user role — see `## Who's using this`). Match the memo format from seed term memos referenced in that config where one exists. The work-product header is always first. For every code other than `usa`, the jurisdiction disclaimer line from `## Outputs` follows the header, and the bilingual house-style rule in `## Outputs` applies to the bottom line, the numbers table and any counterparty-facing text.
 
 ## Workflow
 
@@ -138,7 +138,7 @@ tag `[no rule in <code> files — verify]` and do not compute.
 
 ### Step 2: High-risk flag scan
 
-This is the most important step. Check every flag from `~/.claude/plugins/config/claude-for-legal/employment-legal/CLAUDE.md`. The
+This is the most important step. Check every flag from `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/employment-legal/CLAUDE.md`. The
 default set depends on the applicable code. The first seven rows of the
 table below (recent complaint through contract/handbook promise) are neutral
 and apply under every code; the leave, whistleblower and misclassification
@@ -162,7 +162,7 @@ following are true:
 
 1. The employee works in a state with a high exempt salary threshold — **CA,
    NY, WA, CO, AK** (and any other state listed in
-   `~/.claude/plugins/config/claude-for-legal/employment-legal/CLAUDE.md` →
+   `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/employment-legal/CLAUDE.md` →
    `## Wage & hour` → Known classification risk areas as a high-threshold
    state) — **AND**
 2. The employee is classified **exempt** (salaried, no overtime) — **AND**
@@ -227,7 +227,7 @@ that code's files. **Row missing:** if the facts raise a flag the files do not
 cover, say so, tag it `[no rule in <code> files — verify]`, and do not supply
 the rule from memory.
 
-**Any flag fires → escalate per `~/.claude/plugins/config/claude-for-legal/employment-legal/CLAUDE.md` before the term proceeds.** Not
+**Any flag fires → escalate per `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/employment-legal/CLAUDE.md` before the term proceeds.** Not
 after. Before.
 
 ### Step 2a: End-of-service award computation (populated non-`usa` codes)
@@ -408,7 +408,7 @@ item the plan needs, say so and tag `[no rule in <code> files — verify]`.
 
 ### Step 4: Severance and release
 
-Per `~/.claude/plugins/config/claude-for-legal/employment-legal/CLAUDE.md` → standard severance:
+Per `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/employment-legal/CLAUDE.md` → standard severance:
 
 - Is severance being offered? Per formula or discretionary?
 - Release required? (Usually yes if paying severance — that's the
@@ -485,11 +485,11 @@ what changed? The answer should be documented.
 
 > **Research-connector pre-flight.** Before emitting the memo, check whether a legal research connector is reachable for this session — for `usa`, Westlaw, CourtListener, or any firm-configured research MCP; for a populated non-`usa` code, the portal named in `references/jurisdictions/<code>/MANIFEST.md` → `research_tool` (for `ksa`, `scripts/fetch-law.py --portal boe --index` or a `curl` of the portal home). Collect this into the reviewer note per CLAUDE.md `## Outputs`: if no connector returns results in Step 3 (or none is configured at run time), record it in the **Sources:** line of the reviewer note — for `usa`, e.g., `not connected — cites from training knowledge; the highest-fabrication topics in termination-law memos are final-pay timing, OWBPA group/individual distinctions, state-specific NDA / non-disparagement rules (e.g., CA SB 331), and NLRB positions (e.g., McLaren Macomb) — spot-check those first`; for a populated code, `portal: <host> ✓ reachable | unreachable` plus the files applied, and the highest-fabrication topics are the wage components in "last wage", the resignation fractions, and any fine amount or platform deadline the files tag `[model knowledge — verify]`. Per-citation tags remain inline. Do not emit a standalone banner above the memo.
 
-> **Jurisdiction assumption.** This review assumes the jurisdiction code(s) resolved in Step 0 and any defaults from `~/.claude/plugins/config/claude-for-legal/employment-legal/CLAUDE.md` → `## Jurisdiction` and Jurisdictional footprint. Employment rules, settlement timing, release requirements, and notice obligations vary materially by jurisdiction. If the employee works under a different code, or if choice-of-law is contested, this analysis may not apply as written. An unpopulated code is a stop, not a caveat (Step 0).
+> **Jurisdiction assumption.** This review assumes the jurisdiction code(s) resolved in Step 0 and any defaults from `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/employment-legal/CLAUDE.md` → `## Jurisdiction` and Jurisdictional footprint. Employment rules, settlement timing, release requirements, and notice obligations vary materially by jurisdiction. If the employee works under a different code, or if choice-of-law is contested, this analysis may not apply as written. An unpopulated code is a stop, not a caveat (Step 0).
 
 > **Header, disclaimer and language.** Prepend the work-product header, then — for every code other than `usa` — the jurisdiction disclaimer line from the profile (`## Outputs` → Jurisdiction disclaimer line; for `ksa` the manifest's `disclaimer` row, in English and Arabic). Apply the bilingual house style in CLAUDE.md `## Outputs`: when the profile's output language is bilingual, or the memo contains counterparty-facing text (termination letter, settlement wording), add the authoritative-language rendering of the bottom line, the numbers table (award, compensation, notice, leave payout, settlement total) and every counterparty-facing passage, using the spellings in the manifest's `output_language_rule`. Money in `[currency]` from the profile; dates on the manifest's calendar. Terminability without cause or notice is `usa` doctrine and appears only inside the `usa` branch of this skill; for a populated code the ground, notice and award rows of the file govern.
 
-Match the memo format from seed term memos referenced in `~/.claude/plugins/config/claude-for-legal/employment-legal/CLAUDE.md`. If none:
+Match the memo format from seed term memos referenced in `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/employment-legal/CLAUDE.md`. If none:
 
 ```markdown
 [WORK-PRODUCT HEADER — per plugin config ## Outputs — differs by role; see `## Who's using this`]
@@ -602,7 +602,7 @@ When the applicable code is populated (non-`usa`) — items from the file rows i
 
 ## Consequential-action gate (terminate an employee)
 
-**Before producing a "Go" recommendation or a term-day checklist marked ready:** Read `## Who's using this` in `~/.claude/plugins/config/claude-for-legal/employment-legal/CLAUDE.md`. If the Role is **Non-lawyer**:
+**Before producing a "Go" recommendation or a term-day checklist marked ready:** Read `## Who's using this` in `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/employment-legal/CLAUDE.md`. If the Role is **Non-lawyer**:
 
 > Terminating an employee has legal consequences — wrongful-termination, discrimination, retaliation, and wage-law claims all trace back to how this decision is structured. Have you reviewed this termination with an attorney? If yes, proceed. If no, here's a brief to bring to them:
 >

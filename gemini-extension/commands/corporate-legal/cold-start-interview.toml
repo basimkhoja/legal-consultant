@@ -1,0 +1,4 @@
+description = "House cold-start interview (jurisdiction, request list + prior memo), or --new-deal for deal-specific context. Modular: identifies which practice areas apply (M&A, Board & Secretary, Listed Company, E"
+prompt = """
+Activate the `corporate-legal-cold-start-interview` skill bundled in this extension and run it as written, using the practice profile at ${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/corporate-legal/CLAUDE.md. User input: {{args}}
+"""

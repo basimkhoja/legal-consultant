@@ -1,0 +1,4 @@
+description = "Run the cold-start interview to learn your commercial contracts practice and write your team practice profile. Use on first use of the plugin, when `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/comme"
+prompt = """
+Activate the `commercial-legal-cold-start-interview` skill bundled in this extension and run it as written, using the practice profile at ${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/commercial-legal/CLAUDE.md. User input: {{args}}
+"""

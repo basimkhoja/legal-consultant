@@ -1,0 +1,4 @@
+description = "Route a contract issue to the right approver per the escalation matrix in `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/commercial-legal/CLAUDE.md`, and draft the ask. Use when the user says 'who nee"
+prompt = """
+Activate the `commercial-legal-escalation-flagger` skill bundled in this extension and run it as written, using the practice profile at ${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/commercial-legal/CLAUDE.md. User input: {{args}}
+"""

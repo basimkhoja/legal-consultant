@@ -1,0 +1,4 @@
+description = "Guided customization of your employment practice profile — change one thing without re-running the whole cold-start interview. Adjust jurisdiction codes and footprint, output language, local counsel, "
+prompt = """
+Activate the `employment-legal-customize` skill bundled in this extension and run it as written, using the practice profile at ${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/employment-legal/CLAUDE.md. User input: {{args}}
+"""

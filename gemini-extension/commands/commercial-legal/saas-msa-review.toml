@@ -1,0 +1,4 @@
+description = "Reference: review of SaaS subscription agreements with attention to the terms that matter most in subscription deals — auto-renewal mechanics, price escalation, data portability, uptime SLAs, and subp"
+prompt = """
+Activate the `commercial-legal-saas-msa-review` skill bundled in this extension and run it as written, using the practice profile at ${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/commercial-legal/CLAUDE.md. User input: {{args}}
+"""

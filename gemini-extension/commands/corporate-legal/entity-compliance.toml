@@ -1,0 +1,4 @@
+description = "Entity compliance tracker — initialize, report upcoming deadlines, update status, run health audit, export to CSV. Maintains a compliance-tracker.yaml built from the entity table, calculates filing de"
+prompt = """
+Activate the `corporate-legal-entity-compliance` skill bundled in this extension and run it as written, using the practice profile at ${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/corporate-legal/CLAUDE.md. User input: {{args}}
+"""

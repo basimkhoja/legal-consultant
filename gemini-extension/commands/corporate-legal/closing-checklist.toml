@@ -1,0 +1,4 @@
+description = "What's blocking close — maintain the closing checklist with status, critical path, and days to close. Self-updating: ingests new items from diligence findings and schedule builds, tracks status, surfa"
+prompt = """
+Activate the `corporate-legal-closing-checklist` skill bundled in this extension and run it as written, using the practice profile at ${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/corporate-legal/CLAUDE.md. User input: {{args}}
+"""
