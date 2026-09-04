@@ -5,3 +5,9 @@
 /.claude/
 __pycache__/
 *.pyc
+
+# Legal Consultant fork: never commit client documents
+*.pdf
+*.docx
+*.xlsx
+client-docs/
