@@ -22,7 +22,7 @@ Each task below is written so a fresh Claude Code session can pick it up cold, w
 |---|---|---|---|
 | T1 | Apply the six skill-text friction fixes from the Claude Code runs | done | 2026-09-05, commit "T1: skill-text fixes from the 2026-09-04 scenario runs" |
 | T2 | Run the four required scenarios in Codex CLI and log | done | 2026-09-05, commit "T2: Codex CLI scenario runs"; all four PASS; fetcher and AGENTS.md fixes for the Codex sandbox (`tests/results/2026-09-05-codex.md`) |
-| T3 | Run the four required scenarios in Gemini CLI and log | open | |
+| T3 | Run the four required scenarios in Gemini CLI and log | blocked on credentials (partial) | 2026-09-05, commit "T3 (partial): Gemini CLI setup findings; scenario runs blocked on auth"; extension linked, `--consent`/trust/skill-conflict facts recorded; every `gemini -p` call fails with `IneligibleTierError` (free OAuth tier); needs `GEMINI_API_KEY` or Vertex, then rerun per `tests/results/2026-09-05-gemini.md` |
 | T4 | Rerun the amendment watch before release and confirm leads on the portal | open | |
 | T5 | Phase 6a: push, add the marketplace, switch the installed plugins | open, needs Basim's go-ahead | |
 | T6 | Phase 6b: run the three cold-start interviews with Basim | open, interactive | |

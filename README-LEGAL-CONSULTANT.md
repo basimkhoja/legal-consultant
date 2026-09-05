@@ -51,6 +51,8 @@ gemini extensions install https://github.com/basimkhoja/legal-consultant  # from
 
 Commands are `/commercial-legal:review`, `/corporate-legal:entity-compliance`, `/employment-legal:termination-review`, and so on; the same skills are also selectable by description. Guardrails are in the extension's `GEMINI.md`.
 
+Notes (Gemini CLI 0.58.0, 2026-09-05): add `--consent` when installing or linking from a script, otherwise the command waits on a prompt; headless `gemini -p` runs need a trusted folder (`--skip-trust` or `GEMINI_CLI_TRUST_WORKSPACE=true`); inside a clone the `.agents/skills/` copies trigger a harmless `Skill conflict detected` warning per skill. The free individual OAuth tier is no longer accepted by the CLI (`IneligibleTierError`); use a `GEMINI_API_KEY` or Vertex AI. Details in `docs/runtime-matrix.md`.
+
 What each runtime gets and does not get (subagents, hooks, scheduled runs): `docs/runtime-matrix.md`.
 
 ## Config path

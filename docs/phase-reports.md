@@ -54,4 +54,6 @@ One entry per phase, in the format the kickoff asks for: what was done, what was
 
 **Open.** The Codex CLI and Gemini CLI runs did not complete (process stopped for low memory; API spend limit reached in the same window). Six skill-text friction items from the runners are queued (listed in the summary file). The per-plugin result files were written by the runners before the spend limit cut their final messages; their content is complete.
 
+**Update 2026-09-05.** The six friction fixes are applied (T1). The four Codex CLI runs are complete and all PASS (T2, `tests/results/2026-09-05-codex.md`; fixes to the fetcher's TLS fallback and the generated `AGENTS.md`, no skill text). The Gemini CLI runs are blocked before the first model call: the account's free OAuth tier is rejected by the CLI (`IneligibleTierError`); extension linked, setup findings recorded in `tests/results/2026-09-05-gemini.md` and `docs/runtime-matrix.md`; the runs need a `GEMINI_API_KEY` or Vertex credential (T3, partial).
+
 **Next.** Re-run the four required scenarios in Codex and Gemini one at a time, apply the six friction fixes, then Phase 6 (push after your go-ahead, switch the installed plugins, run the three cold-start interviews with you, first acceptance test on the stc documents).

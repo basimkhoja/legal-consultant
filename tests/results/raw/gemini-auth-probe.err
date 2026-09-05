@@ -1,0 +1,19 @@
+Error authenticating: IneligibleTierError: This client is no longer supported for Gemini Code Assist for individuals. To continue using Gemini, please migrate to the Antigravity suite of products: https://antigravity.google
+    at throwIneligibleOrProjectIdError (file:///Users/basimkhoja/.local/lib/node_modules/@google/gemini-cli/bundle/chunk-MFLFXOVQ.js:310176:11)
+    at _doSetupUser (file:///Users/basimkhoja/.local/lib/node_modules/@google/gemini-cli/bundle/chunk-MFLFXOVQ.js:310165:5)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5) {
+  ineligibleTiers: [
+    {
+      reasonCode: 'UNSUPPORTED_CLIENT',
+      reasonMessage: 'This client is no longer supported for Gemini Code Assist for individuals. To continue using Gemini, please migrate to the Antigravity suite of products: https://antigravity.google',
+      tierId: 'free-tier',
+      tierName: 'Gemini Code Assist for individuals'
+    }
+  ]
+}
+Ripgrep is not available. Falling back to GrepTool.
+[ERROR] [IDEClient] Failed to connect to IDE companion extension. Please ensure the extension is running. To install the extension, run /ide install.
+An unexpected critical error occurred:IneligibleTierError: This client is no longer supported for Gemini Code Assist for individuals. To continue using Gemini, please migrate to the Antigravity suite of products: https://antigravity.google
+    at throwIneligibleOrProjectIdError (file:///Users/basimkhoja/.local/lib/node_modules/@google/gemini-cli/bundle/chunk-MFLFXOVQ.js:310176:11)
+    at _doSetupUser (file:///Users/basimkhoja/.local/lib/node_modules/@google/gemini-cli/bundle/chunk-MFLFXOVQ.js:310165:5)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
