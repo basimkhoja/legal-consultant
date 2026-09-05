@@ -1,9 +1,9 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
-  "name": "claude-for-legal",
+  "name": "legal-consultant",
   "description": "Reference agents, skills, and data connectors for the legal workflows we see most — in-house commercial, privacy, product, corporate, employment, litigation, regulatory, AI governance, IP, and the learning side of the practice (law school clinics and students).",
   "owner": {
-    "name": "Anthropic"
+    "name": "Basim Khoja"
   },
   "plugins": [
     {
