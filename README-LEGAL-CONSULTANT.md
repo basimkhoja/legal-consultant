@@ -23,11 +23,13 @@ Full inventory of the changes: `docs/us-doctrine-inventory.md` (what was US-spec
 ### Claude Code
 
 ```
-/plugin marketplace add basimkhoja/legal-consultant
+/plugin marketplace add basimkhoja/legal-consultant#multi-jurisdiction
 /plugin install commercial-legal@legal-consultant
 /plugin install corporate-legal@legal-consultant
 /plugin install employment-legal@legal-consultant
 ```
+
+The `#multi-jurisdiction` ref is needed while the fork lives on that branch (`main` is still upstream's base commit); the same commands work from the terminal as `claude plugin marketplace add …` and `claude plugin install -s user …`. The fork's `privacy-legal` and `regulatory-legal` are unchanged upstream copies and can be installed the same way if you used them before.
 
 Then run each plugin's cold-start interview (`/commercial-legal:cold-start-interview`, `/corporate-legal:cold-start-interview`, `/employment-legal:cold-start-interview`). The interview writes the profile, including the `## Jurisdiction` section, and offers the jurisdiction's playbook defaults row by row. If you had the upstream plugins installed, uninstall them first; the fork's plugins use the same names.
 

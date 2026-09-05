@@ -61,3 +61,13 @@ One entry per phase, in the format the kickoff asks for: what was done, what was
 **Update 2026-09-05 (T8).** The doctrine layer was updated for the 1448H Government Tenders and Procurement Law (Royal Decree M/76 of 27/2/1448H, gazette 2026-09-04, in force 2027-01-02 per the file's computation with a one-day `[review]`): `references/jurisdictions/ksa/government-tenders-procurement-law.md` now carries the 101-article law as the in-force set, read from the Official Gazette page and tagged `[authority — Umm Al-Qura gazette]` pending the portal listing, with the 2019 rows kept as the repealed set and a matter-date rule in the header; the skill lines that cited the file in the three plugins now route by matter date; the implementing regulations were not yet issued.
 
 **Next.** Re-run the four required scenarios in Codex and Gemini one at a time, apply the six friction fixes, then Phase 6 (push after your go-ahead, switch the installed plugins, run the three cold-start interviews with you, first acceptance test on the stc documents).
+
+## Phase 6 — Release and first use (2026-09-05, in progress)
+
+**6a done (T5).** `multi-jurisdiction` pushed to `origin` with your go-ahead; `main` left at upstream's base commit. The fork's marketplace manifest still carried upstream's name `claude-for-legal`, which collided with the upstream marketplace already configured on this machine, so it was renamed `legal-consultant` (owner: Basim Khoja) and pushed. The marketplace was added from the branch (`claude plugin marketplace add basimkhoja/legal-consultant#multi-jurisdiction`; the CLI accepts the `#ref` form, so no merge to `main` was needed). The five upstream `@claude-for-legal` plugins were uninstalled at user scope and `commercial-legal`, `corporate-legal` and `employment-legal@legal-consultant` installed at 2.0.0; the auto-mode classifier blocks `claude plugin install` from the agent, so you ran those three commands. `privacy-legal` and `regulatory-legal` were not reinstalled (unchanged upstream copies in the fork, installable on request).
+
+**Verified.** `claude plugin list` shows the three fork plugins at 2.0.0, enabled, and nothing from `claude-for-legal`; `claude plugin validate` passes on each installed cache; every installed skill carries Step 0 and each plugin ships `references/jurisdictions/ksa/INDEX.md`.
+
+**Open.** 6b (three cold-start interviews with you) and 6c (first acceptance test on the stc documents). The Codex adapter is used from the repository checkout; the Gemini extension is still linked from T3 and blocked on credentials.
+
+**Next.** T6: run `/commercial-legal:cold-start-interview`, `/corporate-legal:cold-start-interview`, `/employment-legal:cold-start-interview` with you present, one per session if needed.

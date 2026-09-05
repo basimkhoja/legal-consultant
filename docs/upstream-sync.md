@@ -9,6 +9,8 @@
 | Base commit | `4a6c651889c97cc9140580363c73e0eb17379c2b` — "Update plugin content (#104)" |
 | Fork branch | `multi-jurisdiction` (from `main` at the base commit) |
 | Remotes | `origin` = fork, `upstream` = Anthropic |
+| Marketplace name | `legal-consultant` (renamed from upstream's `claude-for-legal` on 2026-09-05 so both marketplaces can be configured side by side; plugin ids are `<plugin>@legal-consultant`) |
+| First push | 2026-09-05: `multi-jurisdiction` pushed to `origin` at `644f6d6` ("B1: OCR the HRSD scanned decisions"), then `6b7f7c8` (marketplace rename). `main` is still at the base commit, not merged. The marketplace is added from the branch: `claude plugin marketplace add basimkhoja/legal-consultant#multi-jurisdiction` (the CLI accepts the `#ref` form, so no merge to `main` was needed). |
 
 ## What the fork changes, by merge risk
 
