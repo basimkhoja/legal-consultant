@@ -28,6 +28,8 @@ One entry per phase, in the format the kickoff asks for: what was done, what was
 
 **Open.** 220 items in `docs/open-questions-ksa-2026-09-04.md`. The ones with the widest effect: the HRSD friendly-settlement rules and Ministerial Decision 115921 are scanned PDFs that could not be read; the Wage Protection System, Nitaqat 2026 phase, GOSI rate schedule, and ZATCA calendar are model knowledge; the Commercial Courts implementing regulation read is the published project text; the UBO Rules' decision number (99 vs 267) is unresolved.
 
+**Update 2026-09-05 (B1).** Both scanned HRSD PDFs are now read: the friendly-settlement rules decision (Ministerial Decision 91285 of 20/6/1445H, 27 articles) and Ministerial Decision 115921 of 19/8/1446H were OCR'd with tesseract 5.5.3 and the Arabic pack at 300 dpi and their rows settled `[authority — HRSD]`; the meaning of "working day" and the Official Gazette issue dates remain open.
+
 **Next.** Phase 3: wire the skills, starting with the shared jurisdiction-resolution step and the commercial review skills' delta table.
 
 ## Phase 3 — Wire the skills (2026-09-04)

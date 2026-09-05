@@ -28,7 +28,7 @@ Each task below is written so a fresh Claude Code session can pick it up cold, w
 | T6 | Phase 6b: run the three cold-start interviews with Basim | open, interactive | |
 | T7 | Phase 6c: first acceptance test on the stc documents | open | |
 | T8 | Author the 1448H Government Tenders and Procurement Law rows before 2027-01-03 | done | 2026-09-05, commit "T8: GTPL 1448H rows"; 101 articles read from the gazette page (portal still does not list the law; re-tag `[BOE — Arabic]` when it does); gazette issue is 2026-09-04, so in force 2027-01-02 (`[review]`; 2027-01-03 on the alternative count); 2019 rows kept as the repealed set; implementing regulations not issued (recheck mof.gov.sa and etimad.sa before 2027-01-02); 19 skill lines switched to matter-date routing |
-| B1 | Backlog: OCR the two scanned HRSD PDFs and settle their rows | backlog | 2026-09-05: re-downloaded; still need OCR |
+| B1 | Backlog: OCR the two scanned HRSD PDFs and settle their rows | done | 2026-09-05, commit "B1: OCR the HRSD scanned decisions"; tesseract 5.5.3 + `ara` pack (the `tesseract-lang` bottle download failed twice on a curl HTTP/2 error and was installed manually by Basim); both PDFs fully legible at 300 dpi (Decision 91285: 7 pages, 27 articles; Decision 115921: 1 page), Arabic-Indic numerals garbled by the OCR and read from the page image; friendly-settlement rows in `labor-dispute-route.md` and the Instrument table of `labor-law-implementing-regulations.md` settled `[authority — HRSD]`; the Friday/Saturday "working day" question is not answered by the texts and stays open |
 | B2 | Backlog: Saudi counsel review of `docs/open-questions-ksa-2026-09-04.md` | backlog | |
 | B3 | Backlog: populate `gbr`, `fra`, `che` (phase two) | backlog | |
 | B4 | Backlog: propose the jurisdiction-neutral mechanism upstream | backlog | |
@@ -196,6 +196,6 @@ Done before this tracker existed: Phases 0 to 4 in full, Phase 5 for the Claude 
 - `laws.boe.gov.sa` fails TLS verification in the Claude Code web-fetch tool; `curl` and `scripts/fetch-law.py` work.
 - The portal keeps original article text in the body and amendments in pop-ups; the fetcher renders both, and the last "تعديلات المادة" block is the wording in force.
 - The portal lists repealed laws under current-looking titles; the fetcher warns on status `لاغي`.
-- `pdftotext` is installed; `tesseract` is not.
+- `pdftotext` and `tesseract` 5.5.3 with the `ara` pack are installed (`tesseract --list-langs`); the Homebrew `tesseract-lang` bottle download failed twice on `curl: (92) HTTP/2 stream ... PROTOCOL_ERROR` on 2026-09-05 and needed a manual install.
 - Codex CLI 0.153 and Gemini CLI 0.58 are installed; both have MCP settings files already.
 - The 2026-09-04 session's runner subagents were cut off by the account's monthly spend limit; their result files were complete before the cut.
