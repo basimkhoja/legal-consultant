@@ -22,12 +22,13 @@ Each task below is written so a fresh Claude Code session can pick it up cold, w
 |---|---|---|---|
 | T1 | Apply the six skill-text friction fixes from the Claude Code runs | done | 2026-09-05, commit "T1: skill-text fixes from the 2026-09-04 scenario runs" |
 | T2 | Run the four required scenarios in Codex CLI and log | done | 2026-09-05, commit "T2: Codex CLI scenario runs"; all four PASS; fetcher and AGENTS.md fixes for the Codex sandbox (`tests/results/2026-09-05-codex.md`) |
-| T3 | Run the four required scenarios in Gemini CLI and log | blocked on credentials (partial) | 2026-09-05, commit "T3 (partial): Gemini CLI setup findings; scenario runs blocked on auth"; extension linked, `--consent`/trust/skill-conflict facts recorded; every `gemini -p` call fails with `IneligibleTierError` (free OAuth tier); needs `GEMINI_API_KEY` or Vertex, then rerun per `tests/results/2026-09-05-gemini.md` |
-| T4 | Rerun the amendment watch before release and confirm leads on the portal | open | |
+| T3 | Run the four required scenarios in Gemini CLI and log | deferred: Basim runs it from Antigravity (partial) | 2026-09-05, commit "T3 (partial): Gemini CLI setup findings; scenario runs blocked on auth"; extension linked, `--consent`/trust/skill-conflict facts recorded; every `gemini -p` call fails with `IneligibleTierError` (free OAuth tier); needs `GEMINI_API_KEY` or Vertex, then rerun per `tests/results/2026-09-05-gemini.md` |
+| T4 | Rerun the amendment watch before release and confirm leads on the portal | done | 2026-09-05, commit "T4: amendment watch 2026-09-05"; no portal change on 14 instruments; new Government Tenders and Procurement Law (M/76 of 1448H) found in the gazette, in force 2027-01-03, header note added, rows deferred to T8 |
 | T5 | Phase 6a: push, add the marketplace, switch the installed plugins | open, needs Basim's go-ahead | |
 | T6 | Phase 6b: run the three cold-start interviews with Basim | open, interactive | |
 | T7 | Phase 6c: first acceptance test on the stc documents | open | |
-| B1 | Backlog: OCR the two scanned HRSD PDFs and settle their rows | backlog | |
+| T8 | Author the 1448H Government Tenders and Procurement Law rows before 2027-01-03 | open | |
+| B1 | Backlog: OCR the two scanned HRSD PDFs and settle their rows | backlog | 2026-09-05: re-downloaded; still need OCR |
 | B2 | Backlog: Saudi counsel review of `docs/open-questions-ksa-2026-09-04.md` | backlog | |
 | B3 | Backlog: populate `gbr`, `fra`, `che` (phase two) | backlog | |
 | B4 | Backlog: propose the jurisdiction-neutral mechanism upstream | backlog | |
@@ -163,6 +164,22 @@ Done before this tracker existed: Phases 0 to 4 in full, Phase 5 for the Claude 
 **Done when.** Log committed as "T7: first acceptance test"; any skill fixes committed separately.
 
 ---
+
+## T8 — Author the 1448H Government Tenders and Procurement Law
+
+**Why.** The 2026-09-05 amendment watch found a replacement law: Royal Decree M/76 of 27/2/1448H, published in the Official Gazette on 2026-09-05, in force 2027-01-03 (its Art. 101). `references/jurisdictions/ksa/government-tenders-procurement-law.md` still describes the 2019 law, with a header note and a stop rule for post-2027-01-03 matters.
+
+**Read first.** `docs/amendment-watch-2026-09-05.md` ("Confirmed on an official source"), the header of `government-tenders-procurement-law.md`, and `references/jurisdictions/_TEMPLATE-instrument.md`. Nothing else.
+
+**Do.**
+1. Check whether laws.boe.gov.sa lists the 1448H law (`python3 scripts/fetch-law.py --portal boe --search "المنافسات والمشتريات"`; the 2019 GUID is `24c563f9-…`, the repealed 2006 one is `c2c05ee1-…`). If listed, fetch it with `--lang ar` and use that text; if not, use the gazette page https://www.uqn.gov.sa/decisions-and-regulations/4001762 (text-extractable) and tag rows `[authority — Umm Al-Qura gazette]` until the portal lists it.
+2. Rewrite the file as the 1448H law (101 articles), keeping the 2019 rows in a clearly labelled "Repealed law, applies to matters before 2027-01-03" section so the skills can still cite them for older contracts. Every rule row tagged; the in-force date computed from Art. 101.
+3. Check the implementing regulations (due within 120 days, Arts. 98–99) on mof.gov.sa and etimad.sa; if issued, add their rows; if not, say so in the header.
+4. Rebuild the index, sync, regenerate the adapters, run the validators.
+
+**Done when.** File rewritten, validators pass, commit "T8: GTPL 1448H rows".
+
+**Context budget.** Medium to large: the gazette text is about 101 articles; one session.
 
 ## Backlog
 

@@ -26,6 +26,17 @@ The portal's "recent updates" log (`/boelaws/laws/lawupdated/1`, pages 1-3) was 
 | Labor Law | — | — | yes (portal attachment, read 2026-09-04) |
 | PDPL | — | — | Portal marks 24 articles as amended (Royal Decree M/148 of 5/9/1444H). Consolidated text read. |
 
+## Post-cutoff amendment check (2026-09-05, pre-release rerun; `docs/amendment-watch-2026-09-05.md`)
+
+Updates log pages 1 to 3 re-read: newest entry still the Enforcement Law; no new entry since 2026-09-04. Fourteen instruments re-fetched with `scripts/fetch-law.py`; every status line and amended-article count matched the value in the instrument file header (Labor 106, PDPL 24, Arbitration 3, Commercial Agencies 3, Commercial Courts 1, all others 0; Enforcement Law "ساري بعد مدة 180 يوم من تاريخ النشر").
+
+| Entry | Issued | Published | Finding |
+|---|---|---|---|
+| نظام المنافسات والمشتريات الحكومية 1448هـ (new Government Tenders and Procurement Law) | Royal Decree M/76, 27/2/1448H (decree number from the Ministry of Finance's hosted PDF title) | Official Gazette (Umm Al-Qura) 23/3/1448H (2026-09-05), https://www.uqn.gov.sa/decisions-and-regulations/4001762 | Replaces the 2019 law (its Art. 100); in force 120 days after publication, 2027-01-03 (Art. 101). Not on the BOE portal as of 2026-09-05 (the 2019 law's page is unchanged; the portal's other same-title entry, GUID `c2c05ee1-201a-48de-91e7-a9a700f2d14f`, is the repealed 2006 law). Recorded in the header of `government-tenders-procurement-law.md`; rows to be authored from the gazette text in tracker T8. The Ministry of Finance PDF (44 pages) is image-only; the gazette page is text-extractable. |
+| All other instruments in the GUID table | — | — | No change on the portal between 2026-09-04 and 2026-09-05. |
+
+The Official Gazette (جريدة أم القرى, https://www.uqn.gov.sa) is the publication of record and is used, tagged `[authority — Umm Al-Qura gazette]`, only for an instrument the BOE portal does not list yet; once the portal lists it, the portal text is re-read and the rows re-tagged.
+
 ## Instruments read from laws.boe.gov.sa
 
 The portal lists repealed laws alongside current ones under similar titles. Every GUID below was checked for the status line `الحالة: ساري` (in force) on 2026-09-04; the 1425H Competition Law (status `لاغي`, repealed) was fetched first by mistake and replaced by the 1440H law. `scripts/fetch-law.py` now prints the status line in the file header so this is visible.
@@ -84,4 +95,5 @@ Portal URL pattern: `https://laws.boe.gov.sa/BoeLaws/Laws/LawDetails/<GUID>/1` (
 - ZATCA filing deadlines and VAT thresholds (zatca.gov.sa; law text not on the BOE portal in a form the fetcher reads).
 - Qiwa, Mudad, and Musaned platform rules (platform terms, not published as instruments).
 - Commercial Agencies Law implementing regulations (Ministry of Commerce; not located as a PDF).
-- HRSD friendly-settlement rules 2024 and Ministerial Decision 115921 (scanned PDFs, no text layer, no OCR available on this machine).
+- HRSD friendly-settlement rules 2024 and Ministerial Decision 115921 (scanned PDFs; re-downloaded 2026-09-05: the settlement rules still have no text layer, the 115921 decision now has a one-page text layer of unreadable glyph mappings; both still need OCR, backlog B1).
+- The 1448H Government Tenders and Procurement Law (published 2026-09-05, in force 2027-01-03): gazette text located but not yet read into rows (tracker T8).
