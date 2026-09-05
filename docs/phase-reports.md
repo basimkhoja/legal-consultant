@@ -29,3 +29,29 @@ One entry per phase, in the format the kickoff asks for: what was done, what was
 **Open.** 220 items in `docs/open-questions-ksa-2026-09-04.md`. The ones with the widest effect: the HRSD friendly-settlement rules and Ministerial Decision 115921 are scanned PDFs that could not be read; the Wage Protection System, Nitaqat 2026 phase, GOSI rate schedule, and ZATCA calendar are model knowledge; the Commercial Courts implementing regulation read is the published project text; the UBO Rules' decision number (99 vs 267) is unresolved.
 
 **Next.** Phase 3: wire the skills, starting with the shared jurisdiction-resolution step and the commercial review skills' delta table.
+
+## Phase 3 — Wire the skills (2026-09-04)
+
+**Done.** Every skill and agent in the three plugins carries "Step 0: Resolve the applicable jurisdiction" (canonical wording in `references/jurisdictions/JURISDICTION-STEP.md`) and a list of the jurisdiction files it loads. US doctrine sits under "When the applicable code is `usa`"; the jurisdiction-file branch sits beside it and is the default for any other code. Commercial: the enforceability check from the Civil Transactions Law replaces the delta table; calendar and currency come from the manifest and profile; bilingual title routing. Corporate: tracker keyed by jurisdiction code and local entity type; filing calendar, diligence overlay, consent and minutes formalities from the files. Employment: end-of-service award (Step 2a) and Art. 77 compensation (Step 2b) computed with inputs and provenance tags; leave register with regime codes; hiring, classification, wage-hour, policy branches. Plugin `CLAUDE.md` templates gained a `## Jurisdiction` section, the disclaimer line, the bilingual house-style rule, the fork tags, and the Step 0 dispatcher. Cold-start interviews rewritten around jurisdiction facts and `playbook-defaults.md`, refusing an unpopulated primary code. Versions 2.0.0. `docs/doctrine-coverage.md` Done column filled for all 295 rows.
+
+**Verified.** `claude plugin validate` passes on all three plugins and the marketplace; JSON and tool-scope lint pass; Step 0 present in 37 skill and agent files; residual US terms all inside `usa` branches or examples.
+
+**Open.** Points the reference files cannot fill, listed by each editor and carried as `[no rule in ksa files — verify]` in the skills: fee shifting, foreign governing-law enforceability practice, privilege position, IP recordal at SAIP, MAC clauses, successor liability, CMA continuing obligations, collective-dismissal rules, interview rights in investigations, overtime divisor.
+
+## Phase 4 — Multi-runtime packaging (2026-09-04)
+
+**Done.** Config path `${LEGAL_CONSULTANT_HOME:-~/.legal-consultant}/<plugin>/CLAUDE.md` in all three plugins (54 files), with the upstream config and cache paths kept as one-time legacy sources in the migration rule. `scripts/build-runtimes.py` generates the Codex adapter (`.agents/skills/<plugin>-<skill>/`, `legal-consultant-jurisdictions` skill, `AGENTS.md`) and the Gemini extension (`gemini-extension/` with `gemini-extension.json`, `GEMINI.md`, skills, and `/plugin:skill` commands); `--check` for CI. `docs/runtime-matrix.md`, `docs/upstream-sync.md`, `CONTRIBUTING-LEGAL-CONSULTANT.md`, `README-LEGAL-CONSULTANT.md`.
+
+**Verified.** Build is deterministic and `--check` passes after regeneration; all validators pass.
+
+**Open.** Gemini extension install from GitHub depends on whether the CLI accepts a sub-folder manifest; the README gives the local-path route as the fallback. Neither adapter ships MCP servers.
+
+## Phase 5 — Validation and scenarios (2026-09-04, partial)
+
+**Done.** 14 scenario files in `tests/scenarios/`, synthetic fixtures in `tests/fixtures/`, and 16 scenario runs in the Claude Code runtime, all PASS (`tests/results/2026-09-04-summary.md` and the three per-plugin logs).
+
+**Verified.** Required behaviours confirmed: gratuity computed with a provenance tag and no at-will language; the Civil Transactions Law reduction rule cited on the penalty clause; Tasattur, MISA, and Nitaqat checked in the LLC diligence; a stop with no supplement when the portal is unreachable in each plugin; a stop with nothing applied when the primary jurisdiction is `gbr`.
+
+**Open.** The Codex CLI and Gemini CLI runs did not complete (process stopped for low memory; API spend limit reached in the same window). Six skill-text friction items from the runners are queued (listed in the summary file). The per-plugin result files were written by the runners before the spend limit cut their final messages; their content is complete.
+
+**Next.** Re-run the four required scenarios in Codex and Gemini one at a time, apply the six friction fixes, then Phase 6 (push after your go-ahead, switch the installed plugins, run the three cold-start interviews with you, first acceptance test on the stc documents).
