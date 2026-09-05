@@ -201,7 +201,7 @@ path with this scheme.
 
 ### Where to start in a fresh session
 
-Read `docs/TRACKER.md` first: it lists the remaining tasks one per session, what
+Read `.planning/TRACKER.md` first: it lists the remaining tasks one per session, what
 to read for each, and what not to load. Then `docs/phase-reports.md` for what
 is already done. Do not reload the doctrine files or the inventory unless a
 task names them.

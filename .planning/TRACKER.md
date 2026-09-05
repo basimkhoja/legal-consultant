@@ -4,7 +4,7 @@ Each task below is written so a fresh Claude Code session can pick it up cold, w
 
 ## Session bootstrap (every task)
 
-1. The root `CLAUDE.md` fork section loads automatically. Read **only** these three files before starting: `docs/TRACKER.md` (this file), `docs/phase-reports.md`, and the task's own "Read first" list. Do not read `KICKOFF_PROMPT.md`, the 26 doctrine files, `docs/us-doctrine-inventory.md`, or `docs/doctrine-coverage.md` unless the task names them; they are large and already applied.
+1. The root `CLAUDE.md` fork section loads automatically. Read **only** these three files before starting: `.planning/TRACKER.md` (this file), `docs/phase-reports.md`, and the task's own "Read first" list. Do not read `KICKOFF_PROMPT.md`, the 26 doctrine files, `docs/us-doctrine-inventory.md`, or `docs/doctrine-coverage.md` unless the task names them; they are large and already applied.
 2. Confirm the tree is clean and the validators pass (about 60 seconds):
    ```bash
    git status --short && git log --oneline -3
