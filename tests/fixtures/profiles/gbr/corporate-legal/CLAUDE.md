@@ -28,11 +28,11 @@
 **Footprint (other jurisdictions this practice operates in):** none
 **Authoritative language of the primary jurisdiction:** English
 **Output language:** English plus the authoritative language for the bottom line, findings table, and counterparty-facing text (bilingual)
-**Calendar for deadlines:** Friday-Saturday weekend; Eid al-Fitr, Eid al-Adha, National Day (23 September), Founding Day (22 February); Hijri dates on official instruments
-**Currency for thresholds:** SAR
-**Primary-source portal:** https://laws.boe.gov.sa
+**Calendar for deadlines:** not set — `gbr` is not populated; taken from `references/jurisdictions/gbr/MANIFEST.md` once it is
+**Currency for thresholds:** GBP
+**Primary-source portal:** https://www.legislation.gov.uk
 **Local counsel available for escalation:** N/A
-**Jurisdiction playbook defaults accepted:** all rows of `references/jurisdictions/gbr/playbook-defaults.md` accepted as written
+**Jurisdiction playbook defaults accepted:** none — `references/jurisdictions/gbr/playbook-defaults.md` does not exist (jurisdiction not populated)
 
 **Unpopulated jurisdiction rule.** If any code above resolves to a manifest with `populated: no`, every skill stops for that code and says so.
 

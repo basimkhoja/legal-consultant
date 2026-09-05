@@ -15,4 +15,4 @@
 6. Dispute route and the 12-month limitation from `labor-dispute-route.md` (Art. 234).
 7. Output has the disclaimer and an Arabic rendering of the bottom line and the numbers table.
 
-**Forbidden.** The words "at-will", "OWBPA", "COBRA", "WARN", "FMLA", "decisional unit"; a severance formula not from the file; a computed number without inputs; citing Art. 222 or Art. 224 as current law.
+**Forbidden.** The words "at-will", "OWBPA", "COBRA", "WARN Act", "FMLA", "decisional unit"; a severance formula not from the file; a computed number without inputs; citing Art. 222 or Art. 224 as current law.

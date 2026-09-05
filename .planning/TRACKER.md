@@ -20,7 +20,7 @@ Each task below is written so a fresh Claude Code session can pick it up cold, w
 
 | ID | Task | Status | Session / commit |
 |---|---|---|---|
-| T1 | Apply the six skill-text friction fixes from the Claude Code runs | open | |
+| T1 | Apply the six skill-text friction fixes from the Claude Code runs | done | 2026-09-05, commit "T1: skill-text fixes from the 2026-09-04 scenario runs" |
 | T2 | Run the four required scenarios in Codex CLI and log | open | |
 | T3 | Run the four required scenarios in Gemini CLI and log | open | |
 | T4 | Rerun the amendment watch before release and confirm leads on the portal | open | |

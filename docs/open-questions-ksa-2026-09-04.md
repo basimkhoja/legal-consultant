@@ -1,7 +1,7 @@
 # Open questions for Saudi counsel — ksa reference layer (2026-09-04)
 Consolidated from the "Open questions for a local practitioner" section of every instrument file in `references/jurisdictions/ksa/`. Each item is a rule the primary text did not settle, a point where practice is known to diverge from text, or a document that could not be read (scanned PDF, regulation not located). Take this list to Saudi counsel; when an item is resolved, record the answer in the instrument file and in the plugin verification log.
 
-**220 items across 26 files.**
+**221 items across 26 files.**
 
 ## Anti-Concealment Law (`anti-concealment-law.md`)
 
@@ -95,6 +95,7 @@ Consolidated from the "Open questions for a local practitioner" section of every
 - Language of minutes and registers: the Law is silent; confirm the Ministry's inspection practice on English-only minutes and whether Arabic minutes are required for registration of resolutions with the Commercial Register.
 - Filing platform names and deadlines for the manager's/board's activity report to the Ministry (Regs Arts. 31, 65) and the financial-statements deposit (Regs Art. 5), and whether late-filing fines are being imposed in practice.
 - SJSC and JSC interaction with CMA rules where the company is "seeking listing" (Arts. 111(1), 271): confirm at what point CMA rules displace the Ministry's Regulations.
+- (Added 2026-09-05, from the written-consent scenario runs.) Whether a partner-manager of an LLC may vote, in a written vote under Art. 166, on his own appointment or on the terms of his own management contract. The file has Art. 27 (authorisation of a manager's interest) and Art. 164 (no vote on his own removal) but no row on the appointment vote; the skill tags it `[no rule in ksa files — verify]`.
 
 ## Competition Law (`competition-law.md`)
 
