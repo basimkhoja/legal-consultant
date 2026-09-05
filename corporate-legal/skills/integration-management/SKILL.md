@@ -299,7 +299,7 @@ in Step 2 and the regulatory items from Step 2.5. Items inherited from the closi
 - Material contract review — complete tier 1 and tier 2 contract assignment analysis [priority: high]
 - Insurance tail policy final confirmation [priority: high]
 - For `ksa`: Commercial Agencies Register update for change of control / signatories where the target is a registered agent (`commercial-agencies-law.md` Art. 1, Art. 3; platform mechanics `[model knowledge — verify]`) [priority: high]
-- For `ksa`: GTPL Art. 70 consents and Etimad classification transfer for government contracts (`government-tenders-procurement-law.md`) [priority: high]
+- For `ksa`: GTPL assignment consents per the applicable procurement rows by matter date (1448H Art. 68 / 2019 Art. 70) and Etimad classification transfer for government contracts (`government-tenders-procurement-law.md`) [priority: high]
 
 **Day 30 — legal-supports:**
 - Data migration privacy review (IT owns, legal advises on data transfer mechanisms — for `ksa`: `personal-data-protection-law.md` Art. 29 and the transfer-regulation row `[model knowledge — verify]` when Saudi personal data moves to a foreign group system; Art. 5 and Regulation Art. 12 if the purpose of processing changes)

@@ -265,7 +265,7 @@ Ask once, early, so Part 3 (escalation) branches correctly:
 > - **Solo / small firm (no hierarchy)** — I'll skip approval-chain questions and ask when you'd loop in a colleague or outside counsel instead.
 > - **Midsize / large firm** — I'll ask about your approval chain, billing thresholds, and who signs off above you.
 > - **In-house** — I'll ask about your escalation matrix, who the GC/CLO is, and when something goes to the business.
-> - **Government / public body / state-owned enterprise legal department** — I'll ask about the approval chain inside the entity and whether your contracts fall under the public-procurement law (for `ksa`: `government-tenders-procurement-law.md` Arts. 1, 10, 93).
+> - **Government / public body / state-owned enterprise legal department** — I'll ask about the approval chain inside the entity and whether your contracts fall under the public-procurement law (for `ksa`: the who-is-bound row of `government-tenders-procurement-law.md` in the applicable procurement rows by matter date, 1448H Arts. 1, 10, 95 / 2019 Arts. 1, 10, 93).
 > - **Legal aid / clinic** — I'll ask about supervision structure and any restrictions on your practice.
 > - **My practice doesn't fit any of these** — say so. I'll adapt.
 
@@ -406,7 +406,7 @@ If they don't have one: proceed with the questions below.
 **Approval thresholds are in your currency.** Ask for the value thresholds in the currency recorded in `## Jurisdiction` (for `ksa`: SAR); write them with the currency code, never a symbol the profile does not carry.
 
 **Automatic escalations**
-- What triggers an escalation regardless of contract value? (Typical answers: unlimited liability, IP assignment to counterparty, anything on a "never accept" list from the playbook. For a populated non-`usa` code, tell the user which triggers the jurisdiction files already name for `escalation-flagger` — for `ksa`: government contracts with penalties above the `government-tenders-procurement-law.md` Art. 72 caps or foreign-seated arbitration, interest clauses, conflicts with the mandatory rows of `civil-transactions-law.md`, unregistered agency structures — and ask whether to add their own.)
+- What triggers an escalation regardless of contract value? (Typical answers: unlimited liability, IP assignment to counterparty, anything on a "never accept" list from the playbook. For a populated non-`usa` code, tell the user which triggers the jurisdiction files already name for `escalation-flagger` — for `ksa`: government contracts with penalties above the `government-tenders-procurement-law.md` delay-penalty cap in the applicable procurement rows by matter date (1448H Art. 70 / 2019 Art. 72) or foreign-seated arbitration, interest clauses, conflicts with the mandatory rows of `civil-transactions-law.md`, unregistered agency structures — and ask whether to add their own.)
 
 **Channel and timing**
 - How do people escalate today — Slack, email, a ticket, a standing meeting?

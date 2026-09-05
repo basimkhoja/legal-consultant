@@ -27,7 +27,7 @@ Each task below is written so a fresh Claude Code session can pick it up cold, w
 | T5 | Phase 6a: push, add the marketplace, switch the installed plugins | open, needs Basim's go-ahead | |
 | T6 | Phase 6b: run the three cold-start interviews with Basim | open, interactive | |
 | T7 | Phase 6c: first acceptance test on the stc documents | open | |
-| T8 | Author the 1448H Government Tenders and Procurement Law rows before 2027-01-03 | open | |
+| T8 | Author the 1448H Government Tenders and Procurement Law rows before 2027-01-03 | done | 2026-09-05, commit "T8: GTPL 1448H rows"; 101 articles read from the gazette page (portal still does not list the law; re-tag `[BOE — Arabic]` when it does); gazette issue is 2026-09-04, so in force 2027-01-02 (`[review]`; 2027-01-03 on the alternative count); 2019 rows kept as the repealed set; implementing regulations not issued (recheck mof.gov.sa and etimad.sa before 2027-01-02); 19 skill lines switched to matter-date routing |
 | B1 | Backlog: OCR the two scanned HRSD PDFs and settle their rows | backlog | 2026-09-05: re-downloaded; still need OCR |
 | B2 | Backlog: Saudi counsel review of `docs/open-questions-ksa-2026-09-04.md` | backlog | |
 | B3 | Backlog: populate `gbr`, `fra`, `che` (phase two) | backlog | |
