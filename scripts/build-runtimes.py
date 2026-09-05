@@ -170,6 +170,7 @@ def build_guardrails(runtime):
         "`python3 scripts/fetch-law.py --portal boe --id <guid> --lang ar` (the script is under the jurisdiction skill's "
         "`scripts/` folder when installed from this repo) or `curl` of the portal page; the built-in web-fetch tool rejects "
         "the laws.boe.gov.sa TLS chain. Tag `[BOE — Arabic]` / `[BOE — official English]`. On failure, apply the no-silent-supplement rule.\n"
+        "%s"
         "- **Not available in this runtime.** Claude Code subagents (`agents/*.md`), hooks, and scheduled agents have no direct "
         "equivalent here; the scheduled behaviours (renewal watcher, leave tracker, deal debrief, playbook monitor, data-room watcher) "
         "are run on demand by invoking the matching skill. See `docs/runtime-matrix.md`.\n"
@@ -177,6 +178,13 @@ def build_guardrails(runtime):
         "connectors (CourtListener, Westlaw) are only relevant when `usa` is in the footprint.\n\n"
         "## Skills\n\n"
         % (runtime_name, runtime_name, CONFIG_PATH, CONFIG_PATH, JUR_SKILL,
+           ("- **Sandbox and network (Codex).** The `read-only` sandbox has no network (`CODEX_SANDBOX_NETWORK_DISABLED=1`): "
+            "the fetch script and any piped `curl` fail with \"Could not resolve host\", so every research step ends in a stopped "
+            "run. Run this plugin's skills with `codex exec -s workspace-write -c sandbox_workspace_write.network_access=true` "
+            "(or the equivalent config). Inside the sandbox curl cannot reach the macOS Keychain, so the portal's incomplete "
+            "certificate chain fails verification; `scripts/fetch-law.py` retries with the public DigiCert chain in "
+            "`scripts/certs/boe-chain.pem` and succeeds. Probe the portal with a GET, never `curl -I`: the portal redirects HEAD "
+            "requests into a loop.\n") if runtime == "codex" else "",
            "`~/.codex/config.toml` under `[mcp_servers.<name>]`" if runtime == "codex"
            else "`gemini-extension.json` → `mcpServers` or your `~/.gemini/settings.json`")
     )

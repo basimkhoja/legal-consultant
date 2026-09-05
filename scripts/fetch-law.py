@@ -18,6 +18,7 @@ Exit codes: 0 fetched, 2 usage, 3 fetch failed (skill must stop, not supplement)
 """
 import argparse
 import html
+import pathlib
 import re
 import subprocess
 import sys
@@ -34,10 +35,19 @@ PORTALS = {
 }
 
 
+# laws.boe.gov.sa serves its leaf certificate without the DigiCert intermediate. macOS curl
+# completes the chain from the system trust store, but inside an agent sandbox that blocks the
+# Keychain (OpenAI Codex CLI, seatbelt) verification fails with curl exit 60. The fallback pins
+# nothing private: certs/boe-chain.pem holds the public DigiCert Global G2 TLS RSA SHA256 2020 CA1
+# intermediate and the DigiCert Global Root G2, and is used only after the default attempt fails.
+CA_CHAIN = pathlib.Path(__file__).resolve().parent / "certs" / "boe-chain.pem"
+
+
 def curl(url: str) -> str:
-    r = subprocess.run(
-        ["curl", "-sS", "--max-time", "90", "-A", "Mozilla/5.0 (legal-consultant fetch-law)", url],
-        capture_output=True, text=True)
+    base = ["curl", "-sS", "--max-time", "90", "-A", "Mozilla/5.0 (legal-consultant fetch-law)"]
+    r = subprocess.run(base + [url], capture_output=True, text=True)
+    if r.returncode == 60 and CA_CHAIN.exists():
+        r = subprocess.run(base + ["--cacert", str(CA_CHAIN), url], capture_output=True, text=True)
     if r.returncode != 0 or not r.stdout.strip():
         sys.stderr.write(f"fetch failed: {url}\n{r.stderr}\n")
         sys.exit(3)

@@ -21,7 +21,7 @@ Each task below is written so a fresh Claude Code session can pick it up cold, w
 | ID | Task | Status | Session / commit |
 |---|---|---|---|
 | T1 | Apply the six skill-text friction fixes from the Claude Code runs | done | 2026-09-05, commit "T1: skill-text fixes from the 2026-09-04 scenario runs" |
-| T2 | Run the four required scenarios in Codex CLI and log | open | |
+| T2 | Run the four required scenarios in Codex CLI and log | done | 2026-09-05, commit "T2: Codex CLI scenario runs"; all four PASS; fetcher and AGENTS.md fixes for the Codex sandbox (`tests/results/2026-09-05-codex.md`) |
 | T3 | Run the four required scenarios in Gemini CLI and log | open | |
 | T4 | Rerun the amendment watch before release and confirm leads on the portal | open | |
 | T5 | Phase 6a: push, add the marketplace, switch the installed plugins | open, needs Basim's go-ahead | |
@@ -83,7 +83,7 @@ Done before this tracker existed: Phases 0 to 4 in full, Phase 5 for the Claude 
 
 **Why.** Same requirement as T2 for Gemini CLI.
 
-**Read first.** As T2.
+**Read first.** As T2, plus the "Runtime findings" section of `tests/results/2026-09-05-codex.md`: Codex's sandbox blocked the portal fetch twice (no network in `read-only`; no Keychain in `workspace-write`), fixed by `scripts/fetch-law.py`'s `--cacert` fallback. Check first whether Gemini's sandbox has the same limits; if the fetch fails, look for `curl: (60)` or `Could not resolve host` in the raw log before blaming the skill.
 
 **Do.**
 1. Link the extension from the checkout: `gemini extensions link "$PWD/gemini-extension"` and confirm with `gemini extensions list`. (Uninstall afterwards only if Basim says so; leaving it linked is part of the switch-over.)

@@ -301,3 +301,14 @@ Consolidated from the "Open questions for a local practitioner" section of every
 - Treatment of trusts, foundations, endowments (أوقاف), and foreign entities with bearer or nominee structures in the chain, which the guide's examples do not address.
 - Interaction with the AML Law's beneficial-owner definition (which the guide's introduction paraphrases) and with the Commercial Register Law of 2024: whether UBO data is shared with, or verified against, other registers.
 - Whether the SAMA circular on bank verification of UBO data through "Wathq" (lead 2.4, March 2026) has been issued and what it requires of account holders.
+
+## Leads from the Codex CLI scenario runs (2026-09-05; see `tests/results/2026-09-05-codex.md`)
+
+None of these has been verified against the primary text; they are leads from a runner that read authority pages live. Change a row's tag only after the text is read.
+
+- `personal-data-protection-law.md`: Codex reports that the row on Regulation Art. 17(1)(f) misstates it — the SDAIA Arabic text (dgp.sdaia.gov.sa, PDPL implementing regulation) concerns a processor's disclosure without prior controller approval, with notice to the controller, not an exemption from data-subject consent; Art. 17(2) concerns notifying the controller of an unlawful instruction. Read the regulation and correct the row if so.
+- `labor-dispute-route.md`: whether Friday and Saturday count as "official holidays" excluded from the Art. 72 grievance clocks (30 days to grieve, 30 days to the court). Two calendars result (2026-10-18 / 11-02 / 12-14 vs 2026-10-05 / 10-20 / 11-19 on a 2026-09-04 notification).
+- `civil-transactions-law.md` and `commercial-courts-law.md`: which non-hearing period governs a commercial services claim between merchants — the Civil Transactions Law Arts. 295–296 periods (ten years general, five for periodic rights) or the Commercial Courts Law Art. 24 five-year rule.
+- `ultimate-beneficial-ownership-rules.md`: a Ministry of Commerce announcement of February 2026 on UBO penalties (a warning-then-fine process) reported as more specific than the file's fine ceiling. Obtain the operative decision.
+- `platform-obligations.md` and `saudization-nitaqat.md`: HRSD pages found live — the 15 April 2026 Qiwa-documentation condition for counting Saudi employees toward Nitaqat (the file tags this `[model knowledge — verify]`; the HRSD news page can upgrade it to `[authority — HRSD]`), and an establishment documentation target of 90% of contracts by 30 June 2026 not yet in the files.
+- `labor-law.md` Art. 10 with `labor-law-implementing-regulations.md` Annex 5 cl. 14.6: whether Hijri is the default calendar for service and deadline computation absent an express contractual Gregorian election, and whether Qiwa's unified contract form makes that election.

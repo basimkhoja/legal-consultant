@@ -1,0 +1,7 @@
+Run three skills in sequence, each as written, step by step, and report the result of each under its own heading. The practice profiles are under /private/tmp/claude-501/-Users-basimkhoja-Projects-Legal-Consultant/a0531e0a-683c-4903-92eb-1e4e392ffe61/scratchpad/homes/gbr/<plugin>/CLAUDE.md (read those absolute paths; LEGAL_CONSULTANT_HOME points at the gbr folder). The jurisdiction tree is at references/jurisdictions/ in this repository.
+(1) $commercial-legal-review on tests/fixtures/inputs/COM-01-services-agreement.md, but treat the governing-law clause as reading "the laws of England and Wales".
+(2) $corporate-legal-entity-compliance with --init for one entity: "Acme Ltd, private company limited by shares, jurisdiction code gbr, incorporated 2019-05-01, financial year end 31 March".
+(3) $employment-legal-termination-review on tests/fixtures/inputs/EMP-01-termination-facts.md, but the employee works in London under an English-law contract.
+Then (4) simulate $employment-legal-cold-start-interview: the user answers `gbr` as the primary jurisdiction code; report exactly what the skill does with that answer.
+Today is 2026-09-04. Do not ask questions; if a skill instructs you to stop and wait for the user, print the stop message it prescribes and move to the next skill.
+ Print the whole deliverable in your final message; do not write any file.

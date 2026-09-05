@@ -1,0 +1,3 @@
+Created the [bilingual stopped-run report](< /Users/basimkhoja/Projects/Legal Consultant/outputs/EMP-01-termination-review-stopped.md >), including the disclaimer, supplied facts, pending findings and amounts, and continuation options.
+
+The full review and computations remain incomplete. The BOE fetch failed with a TLS certificate error. [Skill Step 0.5](</Users/basimkhoja/Projects/Legal Consultant/.agents/skills/employment-legal-termination-review/SKILL.md>) explicitly requires “report the failure and stop” until a continuation route is selected. I therefore left dependent numbers **PENDING** and gave no termination clearance.
